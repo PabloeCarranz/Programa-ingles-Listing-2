@@ -531,9 +531,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; colo
 /* ── VIDEO CONTROL BAR (VCB) ── */
 .vcb {
   display: flex; align-items: center; gap: 8px;
-  padding: 22px 10px; background: #111318;
+  padding: 4px 10px; background: #111318;
   border-bottom: 1px solid #2d3748; flex-shrink: 0;
-  overflow: visible; position: relative; z-index: 10;
 }
 .vcb-btn {
   background: none; border: none; color: #a0aec0;
@@ -547,75 +546,76 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; colo
   flex-shrink: 0; font-family: monospace; min-width: 36px; text-align: center;
 }
 
-/* ── SEEKBAR (barra de progreso con banderas) ── */
+/* ── SEEKBAR ── */
 .seekbar {
-  flex: 1; position: relative; height: 44px;
-  cursor: crosshair; user-select: none; overflow: visible;
+  flex: 1; position: relative; height: 50px;
+  cursor: crosshair; user-select: none;
 }
+/* Track, fill y head — todos al mismo nivel dentro de .seekbar */
 .sb-track {
-  position: absolute; left: 0; right: 0; top: 50%;
-  height: 5px; background: #2d3748; border-radius: 3px;
-  transform: translateY(-50%);
+  position: absolute; left: 0; right: 0;
+  top: 50%; height: 5px;
+  background: #2d3748; border-radius: 3px;
+  transform: translateY(-50%); pointer-events: none;
 }
 .sb-fill {
-  position: absolute; left: 0; top: 0; height: 100%;
-  background: #4299e1; border-radius: 3px; pointer-events: none;
+  position: absolute; left: 0;
+  top: 50%; height: 5px;
+  background: #4299e1; border-radius: 3px;
+  transform: translateY(-50%); pointer-events: none; z-index: 1;
 }
 .sb-head {
-  position: absolute; top: 50%; width: 13px; height: 13px;
+  position: absolute; top: 50%;
+  width: 14px; height: 14px;
   background: #fff; border-radius: 50%;
-  transform: translate(-50%, -50%); pointer-events: none;
-  box-shadow: 0 0 5px rgba(0,0,0,.5);
+  transform: translate(-50%, -50%);
+  pointer-events: none; z-index: 2;
+  box-shadow: 0 0 6px rgba(0,0,0,.6);
 }
 
-/* Bandera de inicio (verde, abajo del track) */
+/* ── Banderas ── */
 .sb-flag {
-  position: absolute; transform: translateX(-50%);
-  cursor: pointer; z-index: 5;
+  position: absolute;
   display: flex; flex-direction: column; align-items: center;
+  transform: translateX(-50%);
+  cursor: pointer; z-index: 5;
 }
-/* inicio: bandera arriba del track, polo apunta hacia abajo */
+/* Inicio: label arriba, polo baja al track — la base del flag toca el track */
 .sb-flag-start { bottom: 50%; }
-/* fin: bandera debajo del track, polo apunta hacia arriba */
-.sb-flag-end   { top: 50%; flex-direction: column-reverse; }
+/* Fin: polo sube al track, label cuelga abajo — la cima del flag toca el track */
+.sb-flag-end   { top: 50%; }
 
 .sb-flag-label {
-  font-size: 0.55rem; font-weight: 800; color: #000;
+  font-size: 0.55rem; font-weight: 800;
   padding: 1px 4px; border-radius: 3px; line-height: 1.5;
   white-space: nowrap; transition: transform .15s;
-  box-shadow: 0 1px 3px rgba(0,0,0,.5);
 }
-.sb-flag:hover .sb-flag-label { transform: scale(1.3); }
-.sb-flag-pole { width: 2px; height: 8px; }
+.sb-flag:hover .sb-flag-label { transform: scale(1.2); }
+.sb-flag-pole { width: 2px; height: 10px; flex-shrink: 0; }
 
-/* Bandera INICIO — neón del color del fragmento */
+/* Inicio — neón del color único del fragmento */
 @keyframes neon-pulse-start {
-  0%, 100% { box-shadow: 0 0 4px var(--flag-color), 0 0 10px var(--flag-color); opacity: 1; }
-  50%       { box-shadow: 0 0 10px var(--flag-color), 0 0 22px var(--flag-color); opacity: .75; }
+  0%, 100% { box-shadow: 0 0 4px var(--flag-color), 0 0 10px var(--flag-color); }
+  50%       { box-shadow: 0 0 10px var(--flag-color), 0 0 22px var(--flag-color); opacity: .8; }
 }
 .sb-flag-start-label {
+  color: #000;
   animation: neon-pulse-start 1.6s ease-in-out infinite;
   box-shadow: 0 0 6px var(--flag-color), 0 0 14px var(--flag-color);
 }
-.sb-flag-start-pole {
-  box-shadow: 0 0 4px var(--flag-color);
-}
+.sb-flag-start-pole { box-shadow: 0 0 4px var(--flag-color); }
 
-/* Bandera FIN — rojo neón con pulso */
+/* Fin — rojo neón */
 @keyframes neon-pulse {
-  0%, 100% { box-shadow: 0 0 4px #ff3030, 0 0 10px #ff3030; opacity: 1; }
-  50%       { box-shadow: 0 0 8px #ff6060, 0 0 20px #ff2020, 0 0 30px #ff000088; opacity: .75; }
+  0%, 100% { box-shadow: 0 0 4px #ff3030, 0 0 10px #ff3030; }
+  50%       { box-shadow: 0 0 8px #ff6060, 0 0 20px #ff2020; opacity: .8; }
 }
 .sb-flag-end-label {
-  background: #ff2020 !important;
-  color: #fff !important;
+  background: #ff2020 !important; color: #fff !important;
   animation: neon-pulse 1.4s ease-in-out infinite;
   box-shadow: 0 0 6px #ff3030, 0 0 14px #ff000088;
 }
-.sb-flag-end-pole {
-  background: #ff2020;
-  box-shadow: 0 0 4px #ff3030;
-}
+.sb-flag-end-pole { background: #ff2020; box-shadow: 0 0 4px #ff3030; }
 
 /* Tooltip */
 .sb-tooltip {
@@ -623,7 +623,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; colo
   background: rgba(10,12,20,.95); color: #e2e8f0;
   font-size: 0.7rem; padding: 2px 8px; border-radius: 4px;
   pointer-events: none; white-space: nowrap;
-  transform: translateX(-50%); border: 1px solid #4a5568;
+  transform: translateX(-50%); border: 1px solid #4a5568; z-index: 10;
 }
 
 /* ── STICKER SYSTEM ── */
