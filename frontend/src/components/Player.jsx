@@ -243,36 +243,37 @@ function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag }) {
       onPointerUp={() => { dragging.current = false }}
       onPointerLeave={() => setHover(null)}
     >
-      {/* Track */}
-      <div className="sb-track">
-        <div className="sb-fill"  style={{ width: `${pct(currentTime)}%` }} />
-        <div className="sb-head"  style={{ left:  `${pct(currentTime)}%` }} />
-      </div>
+      {/* Track (fondo gris) */}
+      <div className="sb-track" />
+      {/* Fill de progreso (azul) */}
+      <div className="sb-fill" style={{ width: `${pct(currentTime)}%` }} />
+      {/* Cabeza de reproducción */}
+      <div className="sb-head" style={{ left: `${pct(currentTime)}%` }} />
 
-      {/* Banderas por fragmento — cada uno con su color único */}
+      {/* Banderas por fragmento */}
       {segments.map((seg, idx) => {
         const color = FLAG_COLORS[idx % FLAG_COLORS.length]
         return (
-        <span key={seg.id ?? idx}>
-          {/* Bandera de INICIO (arriba del track) */}
-          <div className="sb-flag sb-flag-start"
-            style={{ left: `${pct(seg.start)}%`, '--flag-color': color }}
-            onPointerDown={e => { e.stopPropagation(); onSeek(seg.start) }}
-            title={`▶ Inicio: ${seg.phrase}`}
-          >
-            <div className="sb-flag-label sb-flag-start-label" style={{ background: color, color: '#000' }}>{idx + 1}▶</div>
-            <div className="sb-flag-pole  sb-flag-start-pole"  style={{ background: color }} />
-          </div>
-          {/* Bandera de FIN (abajo) — pausa al hacer click */}
-          <div className="sb-flag sb-flag-end"
-            style={{ left: `${pct(seg.end)}%` }}
-            onPointerDown={e => { e.stopPropagation(); onEndFlag(seg.end) }}
-            title={`⏸ Fin: ${seg.phrase} — click pausa aquí`}
-          >
-            <div className="sb-flag-label sb-flag-end-label">■{idx + 1}</div>
-            <div className="sb-flag-pole sb-flag-end-pole" />
-          </div>
-        </span>
+          <span key={seg.id ?? idx}>
+            {/* Bandera de INICIO — arriba del track */}
+            <div className="sb-flag sb-flag-start"
+              style={{ left: `${pct(seg.start)}%`, '--flag-color': color }}
+              onPointerDown={e => { e.stopPropagation(); onSeek(seg.start) }}
+              title={`▶ ${seg.phrase}`}
+            >
+              <div className="sb-flag-label sb-flag-start-label" style={{ background: color }}>{idx + 1}▶</div>
+              <div className="sb-flag-pole sb-flag-start-pole" style={{ background: color }} />
+            </div>
+            {/* Bandera de FIN — abajo del track, pausa al click */}
+            <div className="sb-flag sb-flag-end"
+              style={{ left: `${pct(seg.end)}%` }}
+              onPointerDown={e => { e.stopPropagation(); onEndFlag(seg.end) }}
+              title={`⏸ ${seg.phrase}`}
+            >
+              <div className="sb-flag-pole sb-flag-end-pole" />
+              <div className="sb-flag-label sb-flag-end-label">■{idx + 1}</div>
+            </div>
+          </span>
         )
       })}
 
