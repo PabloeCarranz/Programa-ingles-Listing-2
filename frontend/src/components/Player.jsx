@@ -305,9 +305,9 @@ export default function Player({ video, onBack }) {
   const [selectedStickerId, setSelectedStickerId] = useState(null)
   const [currentRepDisplay, setCurrentRepDisplay] = useState(0)
   const [activeSubOverride, setActiveSubOverride] = useState(null) // { en, es }
-  const [configIdx,         setConfigIdx]         = useState(null)
   const [downloading,       setDownloading]       = useState(null)
-  const currentRepRef = useRef(0)
+  const currentRepRef  = useRef(0)
+  const loopSeeking    = useRef(false)
 
   const [active,       setActive]       = useState(null)
   const [looping,      setLooping]      = useState(false)
@@ -411,7 +411,10 @@ export default function Player({ video, onBack }) {
     } else setCurrentEs('')
     if (looping && active !== null && segments[active]) {
       const seg = segments[active]
-      if (t >= seg.end) {
+      // Reset guard cuando el video ya está antes del fin (seek completado)
+      if (t < seg.end - 0.3) loopSeeking.current = false
+      if (t >= seg.end && !loopSeeking.current) {
+        loopSeeking.current = true
         const totalReps = seg.repeat ?? 1
         const nextRep   = currentRepRef.current + 1
         if (nextRep >= totalReps) {
@@ -420,11 +423,10 @@ export default function Player({ video, onBack }) {
           currentRepRef.current = 0; setCurrentRepDisplay(0)
           setActiveSubOverride(null)
           if (videoRef.current) videoRef.current.playbackRate = 1
+          loopSeeking.current = false
         } else {
           currentRepRef.current = nextRep
           setCurrentRepDisplay(nextRep)
-          const repCfg = (seg.repConfig ?? [])[nextRep] ?? { en: true, es: true }
-          setActiveSubOverride(repCfg)
           videoRef.current.currentTime = seg.start
           videoRef.current.play()
         }
@@ -442,12 +444,17 @@ export default function Player({ video, onBack }) {
   function playSegment(idx) {
     const seg = segments[idx]; if (!seg || !videoRef.current) return
     currentRepRef.current = 0
+    loopSeeking.current = false
     setCurrentRepDisplay(0)
-    const repCfg = (seg.repConfig ?? [])[0] ?? { en: true, es: true }
-    setActiveSubOverride(repCfg)
+    setActiveSubOverride({ en: seg.showEn !== false, es: seg.showEs === true })
     setActive(idx); setLooping(true)
     videoRef.current.playbackRate = seg.speed ?? 1
     videoRef.current.currentTime = seg.start; videoRef.current.play()
+  }
+  function pauseSegment() {
+    if (!videoRef.current) return
+    if (videoRef.current.paused) videoRef.current.play()
+    else videoRef.current.pause()
   }
   function stopLoop() {
     setLooping(false); setActive(null)
@@ -463,31 +470,16 @@ export default function Player({ video, onBack }) {
     const phrase = newPhrase.trim() || sub?.phrase || `Fragmento ${segments.length + 1}`
     const newSeg = {
       id: Date.now(), start: markStart, end: t, phrase,
-      speed: 1, repeat: 1, repConfig: [{ en: true, es: true }]
+      speed: 1, repeat: 1, showEn: true, showEs: false
     }
     const updated = [...segments, newSeg].sort((a, b) => a.start - b.start)
     setSegments(updated); persistSegs(updated)
     setMarkStart(null); setMarking(false); setNewPhrase(''); flashSaved()
   }
   function updateSegConfig(idx, changes) {
-    const updated = segments.map((s, i) => {
-      if (i !== idx) return s
-      const merged = { ...s, ...changes }
-      if ('repeat' in changes) {
-        const n = Math.max(1, changes.repeat)
-        const old = s.repConfig ?? [{ en: true, es: true }]
-        merged.repConfig = Array.from({ length: n }, (_, j) => old[j] ?? { en: j === 0, es: false })
-        merged.repeat = n
-      }
-      return merged
-    })
+    if ('repeat' in changes) changes.repeat = Math.max(1, changes.repeat)
+    const updated = segments.map((s, i) => i !== idx ? s : { ...s, ...changes })
     setSegments(updated); persistSegs(updated)
-  }
-  function toggleRepSub(segIdx, repIdx, lang) {
-    const seg = segments[segIdx]
-    const cfg = [...(seg.repConfig ?? [{ en: true, es: true }])]
-    cfg[repIdx] = { ...cfg[repIdx], [lang]: !cfg[repIdx][lang] }
-    updateSegConfig(segIdx, { repConfig: cfg })
   }
   async function downloadSegment(seg) {
     setDownloading(seg.id)
@@ -831,12 +823,6 @@ export default function Player({ video, onBack }) {
 
         {rightTab === 'fragments' && (
           <div className="seg-list">
-            {looping && (
-              <div className="loop-status">
-                <span>🔁 Rep {currentRepDisplay + 1} / {segments[active]?.repeat ?? 1}</span>
-                <button className="stop-loop-btn-full" onClick={stopLoop}>⏹ Detener</button>
-              </div>
-            )}
             {segments.length === 0 && (
               <div className="seg-empty">
                 Pausá en la frase que querés y usá<br />
@@ -845,85 +831,96 @@ export default function Player({ video, onBack }) {
               </div>
             )}
             {segments.map((seg, idx) => {
-              const isActive = active === idx && looping
+              const isActive  = active === idx && looping
               const segRepeat = seg.repeat ?? 1
-              const segSpeed  = seg.speed ?? 1
-              const repConfig = seg.repConfig ?? [{ en: true, es: true }]
-              const showCfg   = configIdx === idx
+              const segSpeed  = seg.speed  ?? 1
               return (
-              <div key={seg.id ?? idx} className={`seg-item ${isActive ? 'seg-active' : ''}`}>
-                <div className="seg-time">{fmt(seg.start)} → {fmt(seg.end)}</div>
-                {editingIdx === idx ? (
-                  <div className="seg-edit-row">
-                    <input className="seg-edit-input" value={editVal}
-                      onChange={e => setEditVal(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') saveSegEdit(idx); if (e.key === 'Escape') setEditingIdx(null) }}
-                      autoFocus />
-                    <button className="seg-save-btn" onClick={() => saveSegEdit(idx)}>✓</button>
-                    <button className="seg-cancel-btn" onClick={() => setEditingIdx(null)}>✕</button>
-                  </div>
-                ) : <div className="seg-phrase">{seg.phrase}</div>}
-                <div className="seg-actions">
-                  <button className={`seg-play-btn ${isActive ? 'seg-playing' : ''}`}
-                    onClick={() => isActive ? stopLoop() : playSegment(idx)}>
-                    {isActive ? '⏹' : '▶'}
-                  </button>
-                  <button className="seg-edit-btn" onClick={() => { setEditingIdx(idx); setEditVal(seg.phrase) }}>✏️</button>
-                  <button className="seg-del-btn"  onClick={() => deleteSegment(idx)}>🗑</button>
-                  <button className={`seg-cfg-btn ${showCfg ? 'active' : ''}`}
-                    onClick={() => setConfigIdx(showCfg ? null : idx)} title="Configurar">⚙️</button>
-                  <button className="seg-dl-btn"
-                    disabled={downloading === seg.id}
-                    onClick={() => downloadSegment(seg)}
-                    title="Descargar fragmento">
-                    {downloading === seg.id ? '⏳' : '⬇️'}
-                  </button>
+              <div key={seg.id ?? idx} className={`seg-card ${isActive ? 'seg-card-active' : ''}`}>
+
+                {/* ── Nombre y tiempo ── */}
+                <div className="seg-card-header">
+                  <span className="seg-card-time">{fmt(seg.start)} → {fmt(seg.end)}</span>
+                  {editingIdx === idx ? (
+                    <div className="seg-edit-row">
+                      <input className="seg-edit-input" value={editVal}
+                        onChange={e => setEditVal(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') saveSegEdit(idx); if (e.key === 'Escape') setEditingIdx(null) }}
+                        autoFocus />
+                      <button className="seg-save-btn" onClick={() => saveSegEdit(idx)}>✓</button>
+                      <button className="seg-cancel-btn" onClick={() => setEditingIdx(null)}>✕</button>
+                    </div>
+                  ) : (
+                    <span className="seg-card-name"
+                      onClick={() => { setEditingIdx(idx); setEditVal(seg.phrase) }}
+                      title="Clic para renombrar">
+                      {seg.phrase}
+                    </span>
+                  )}
                 </div>
 
-                {/* ── Panel de configuración ── */}
-                {showCfg && (
-                  <div className="seg-cfg-panel">
-                    {/* Velocidad */}
-                    <div className="scfg-row">
-                      <span className="scfg-label">Velocidad</span>
-                      <div className="scfg-btns">
-                        {[0.5, 0.75, 1, 1.25, 1.5, 2].map(v => (
-                          <button key={v}
-                            className={`scfg-speed-btn ${segSpeed === v ? 'active' : ''}`}
-                            onClick={() => updateSegConfig(idx, { speed: v })}>
-                            {v}x
-                          </button>
-                        ))}
-                      </div>
+                {/* ── Controles de reproducción ── */}
+                {isActive ? (
+                  <div className="seg-playbar">
+                    <div className="seg-reps-track">
+                      {Array.from({ length: segRepeat }, (_, i) => (
+                        <div key={i} className={`seg-rep-dot ${i < currentRepDisplay ? 'done' : i === currentRepDisplay ? 'current' : ''}`} />
+                      ))}
                     </div>
-                    {/* Repeticiones */}
-                    <div className="scfg-row">
-                      <span className="scfg-label">Repetir</span>
-                      <div className="scfg-rep-ctrl">
-                        <button className="scfg-adj" onClick={() => updateSegConfig(idx, { repeat: segRepeat - 1 })}>−</button>
-                        <span className="scfg-rep-num">{segRepeat}x</span>
-                        <button className="scfg-adj" onClick={() => updateSegConfig(idx, { repeat: segRepeat + 1 })}>+</button>
-                      </div>
+                    <span className="seg-rep-label">Vuelta {currentRepDisplay + 1} de {segRepeat}</span>
+                    <div className="seg-playbar-btns">
+                      <button className="seg-pause-btn" onClick={pauseSegment} title={playing ? 'Pausar' : 'Seguir'}>
+                        {playing ? '⏸ Pausar' : '▶ Seguir'}
+                      </button>
+                      <button className="seg-stop-btn" onClick={stopLoop} title="Detener y salir del bucle">
+                        ⏹ Detener
+                      </button>
                     </div>
-                    {/* Subtítulos por repetición */}
-                    <div className="scfg-subs-title">Subtítulos por repetición</div>
-                    {repConfig.map((rc, ri) => (
-                      <div key={ri} className="scfg-rep-row">
-                        <span className="scfg-rep-lbl">Rep {ri + 1}</span>
-                        <button
-                          className={`scfg-sub-btn ${rc.en ? 'on' : ''}`}
-                          onClick={() => toggleRepSub(idx, ri, 'en')}>
-                          🇺🇸 EN
-                        </button>
-                        <button
-                          className={`scfg-sub-btn ${rc.es ? 'on' : ''}`}
-                          onClick={() => toggleRepSub(idx, ri, 'es')}>
-                          🇪🇸 ES
-                        </button>
-                      </div>
+                  </div>
+                ) : (
+                  <button className="seg-play-big" onClick={() => playSegment(idx)}>
+                    ▶ Reproducir
+                  </button>
+                )}
+
+                {/* ── Config siempre visible ── */}
+                <div className="seg-config">
+                  <div className="seg-config-row">
+                    <span className="seg-cfg-icon">⚡</span>
+                    {[0.5, 0.75, 1, 1.25, 1.5].map(v => (
+                      <button key={v}
+                        className={`seg-speed-pill ${segSpeed === v ? 'active' : ''}`}
+                        onClick={() => updateSegConfig(idx, { speed: v })}>
+                        {v}x
+                      </button>
                     ))}
                   </div>
-                )}
+                  <div className="seg-config-row">
+                    <span className="seg-cfg-icon">🔁</span>
+                    <button className="seg-adj-btn" onClick={() => updateSegConfig(idx, { repeat: segRepeat - 1 })}>−</button>
+                    <span className="seg-repeat-num">{segRepeat} {segRepeat === 1 ? 'vez' : 'veces'}</span>
+                    <button className="seg-adj-btn" onClick={() => updateSegConfig(idx, { repeat: segRepeat + 1 })}>+</button>
+                    <button
+                      className={`seg-sub-pill ${seg.showEn !== false ? 'on' : ''}`}
+                      onClick={() => updateSegConfig(idx, { showEn: !(seg.showEn !== false) })}>
+                      🇺🇸 EN
+                    </button>
+                    <button
+                      className={`seg-sub-pill ${seg.showEs ? 'on' : ''}`}
+                      onClick={() => updateSegConfig(idx, { showEs: !seg.showEs })}>
+                      🇪🇸 ES
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── Acciones ── */}
+                <div className="seg-card-footer">
+                  <button className="seg-dl-btn" disabled={downloading === seg.id}
+                    onClick={() => downloadSegment(seg)} title="Descargar">
+                    {downloading === seg.id ? '⏳' : '⬇️'} Bajar
+                  </button>
+                  <button className="seg-del-btn" onClick={() => deleteSegment(idx)}>🗑 Borrar</button>
+                </div>
+
               </div>
               )
             })}

@@ -371,15 +371,122 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; colo
 .seg-empty { color: #4a5568; font-size: 0.85rem; padding: 20px 12px; line-height: 1.8; text-align: center; }
 .stop-loop-btn-full { width: 100%; margin-bottom: 8px; background: #742a2a; border: none; color: #feb2b2; border-radius: 6px; padding: 6px; font-size: 0.82rem; cursor: pointer; }
 
+/* ── NUEVO DISEÑO DE TARJETAS DE FRAGMENTO ── */
+.seg-card {
+  background: #141820; border: 1px solid #2d3748;
+  border-radius: 12px; padding: 12px; margin-bottom: 10px;
+  transition: border-color .2s, background .2s;
+}
+.seg-card.seg-card-active {
+  border-color: #4299e1; background: #101d2e;
+  box-shadow: 0 0 0 1px #4299e155;
+}
+
+/* Header */
+.seg-card-header {
+  display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.seg-card-time {
+  font-size: 0.7rem; color: #4a5568; font-family: monospace; flex-shrink: 0;
+}
+.seg-card-name {
+  font-size: 0.9rem; color: #e2e8f0; line-height: 1.4; cursor: pointer; flex: 1;
+  border-bottom: 1px dashed transparent; transition: border-color .2s;
+}
+.seg-card-name:hover { border-bottom-color: #4a5568; color: #90cdf4; }
+
+/* Botón reproducir grande */
+.seg-play-big {
+  width: 100%; padding: 9px; margin-bottom: 10px;
+  background: #2b6cb0; border: none; color: #fff;
+  border-radius: 8px; font-size: 0.9rem; font-weight: 700;
+  cursor: pointer; transition: background .15s;
+}
+.seg-play-big:hover { background: #3182ce; }
+
+/* Barra de reproducción activa */
+.seg-playbar {
+  background: #0a1628; border-radius: 8px; padding: 8px 10px;
+  margin-bottom: 10px; border: 1px solid #2c5282;
+}
+.seg-reps-track {
+  display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap;
+}
+.seg-rep-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #2d3748; border: 1.5px solid #4a5568; transition: all .2s;
+}
+.seg-rep-dot.done    { background: #276749; border-color: #48bb78; }
+.seg-rep-dot.current { background: #4299e1; border-color: #90cdf4; box-shadow: 0 0 6px #4299e1; }
+.seg-rep-label {
+  font-size: 0.75rem; color: #90cdf4; margin-bottom: 8px; display: block;
+}
+.seg-playbar-btns { display: flex; gap: 8px; }
+.seg-pause-btn {
+  flex: 1; padding: 7px; background: #2b6cb0; border: none; color: #fff;
+  border-radius: 7px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: background .15s;
+}
+.seg-pause-btn:hover { background: #3182ce; }
+.seg-stop-btn {
+  padding: 7px 12px; background: #742a2a; border: none; color: #fed7d7;
+  border-radius: 7px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: background .15s;
+}
+.seg-stop-btn:hover { background: #9b2c2c; }
+
+/* Config inline siempre visible */
+.seg-config {
+  background: #0d1117; border-radius: 8px; padding: 8px 10px;
+  margin-bottom: 10px; border: 1px solid #1e2533; display: flex; flex-direction: column; gap: 6px;
+}
+.seg-config-row {
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+}
+.seg-cfg-icon { font-size: 0.85rem; flex-shrink: 0; width: 18px; }
+.seg-speed-pill {
+  background: #2d3748; border: none; color: #a0aec0;
+  border-radius: 20px; padding: 3px 9px; font-size: 0.72rem; cursor: pointer; transition: all .15s;
+}
+.seg-speed-pill.active { background: #2b6cb0; color: #fff; font-weight: 700; }
+.seg-speed-pill:hover:not(.active) { background: #4a5568; }
+.seg-adj-btn {
+  background: #2d3748; border: none; color: #a0aec0;
+  border-radius: 6px; padding: 2px 9px; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+}
+.seg-adj-btn:hover { background: #4a5568; }
+.seg-repeat-num {
+  font-size: 0.82rem; color: #e2e8f0; font-weight: 700; min-width: 48px; text-align: center;
+}
+.seg-sub-pill {
+  background: #2d3748; border: 1px solid #4a5568; color: #718096;
+  border-radius: 20px; padding: 2px 9px; font-size: 0.72rem; cursor: pointer; transition: all .15s;
+}
+.seg-sub-pill.on  { background: #276749; border-color: #48bb78; color: #9ae6b4; }
+.seg-sub-pill:hover:not(.on) { background: #4a5568; }
+
+/* Footer de la tarjeta */
+.seg-card-footer {
+  display: flex; gap: 6px; align-items: center;
+}
+.seg-dl-btn {
+  background: #1a2535; border: 1px solid #2d3748; color: #a0aec0;
+  border-radius: 7px; padding: 5px 10px; font-size: 0.78rem; cursor: pointer; transition: all .15s;
+}
+.seg-dl-btn:hover:not(:disabled) { background: #276749; border-color: #48bb78; color: #9ae6b4; }
+.seg-dl-btn:disabled { opacity: .35; cursor: default; }
+.seg-del-btn {
+  background: #1a2535; border: 1px solid #2d3748; color: #a0aec0;
+  border-radius: 7px; padding: 5px 10px; font-size: 0.78rem; cursor: pointer; transition: all .15s; margin-left: auto;
+}
+.seg-del-btn:hover { background: #742a2a; border-color: #9b2c2c; color: #fed7d7; }
+
+/* Ítems de subtítulos (panel EN/ES) */
 .seg-item { background: #0f1117; border: 1px solid #2d3748; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; transition: border-color .2s; }
-.seg-item.seg-active { border-color: #4299e1; background: #1a2535; }
 .sub-item { cursor: default; }
 .seg-time   { font-size: 0.72rem; color: #4a5568; margin-bottom: 4px; font-family: monospace; }
 .seg-phrase { font-size: 0.88rem; color: #e2e8f0; line-height: 1.4; margin-bottom: 8px; }
 .seg-actions { display: flex; gap: 6px; align-items: center; }
 .seg-play-btn { background: #2b6cb0; border: none; color: white; border-radius: 6px; padding: 4px 12px; font-size: 0.85rem; cursor: pointer; flex: 1; transition: background .15s; }
 .seg-play-btn:hover    { background: #2c5282; }
-.seg-play-btn.seg-playing { background: #744210; }
 .autosync-row {
   display: flex; gap: 8px; padding: 8px 14px;
   border-bottom: 1px solid #2d3748; flex-shrink: 0;
@@ -420,52 +527,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; colo
 .seg-dl-btn:hover { opacity: 1; background: #276749; }
 .seg-dl-btn:disabled { opacity: .3; cursor: default; }
 
-/* Loop status bar */
-.loop-status {
-  display: flex; align-items: center; justify-content: space-between;
-  background: #1a4a7a; border-radius: 6px; padding: 5px 10px;
-  margin-bottom: 8px; font-size: 0.8rem; color: #90cdf4;
-}
-.loop-status .stop-loop-btn-full {
-  width: auto; margin: 0; padding: 3px 10px; font-size: 0.78rem;
-}
-
-/* Segmento config panel */
-.seg-cfg-panel {
-  margin-top: 8px; padding: 10px;
-  background: #0a0e14; border-radius: 8px;
-  border: 1px solid #2d3748;
-}
-.scfg-row {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
-}
-.scfg-label {
-  font-size: 0.72rem; color: #718096; font-weight: 600; min-width: 60px;
-}
-.scfg-btns { display: flex; gap: 3px; flex-wrap: wrap; }
-.scfg-speed-btn {
-  background: #2d3748; border: none; color: #a0aec0;
-  border-radius: 5px; padding: 3px 7px; font-size: 0.72rem; cursor: pointer;
-}
-.scfg-speed-btn.active { background: #4299e1; color: #fff; }
-.scfg-rep-ctrl { display: flex; align-items: center; gap: 6px; }
-.scfg-adj {
-  background: #2d3748; border: none; color: #a0aec0;
-  border-radius: 5px; padding: 2px 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer;
-}
-.scfg-adj:hover { background: #4a5568; }
-.scfg-rep-num { font-size: 0.85rem; color: #e2e8f0; font-weight: 700; min-width: 24px; text-align: center; }
-.scfg-subs-title { font-size: 0.7rem; color: #4a5568; font-weight: 600; margin-bottom: 5px; text-transform: uppercase; }
-.scfg-rep-row {
-  display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
-}
-.scfg-rep-lbl { font-size: 0.7rem; color: #718096; min-width: 36px; }
-.scfg-sub-btn {
-  background: #2d3748; border: 1px solid #4a5568; color: #718096;
-  border-radius: 5px; padding: 2px 8px; font-size: 0.72rem; cursor: pointer;
-  transition: all .15s;
-}
-.scfg-sub-btn.on { background: #276749; border-color: #48bb78; color: #9ae6b4; }
 
 /* ── VIDEO CONTROL BAR (VCB) ── */
 .vcb {
