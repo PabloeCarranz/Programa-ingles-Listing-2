@@ -412,7 +412,10 @@ export default function Player({ video, onBack }) {
 
   // ── Cargar datos ──
   useEffect(() => {
-    fetch(`/api/segments/${encodeURIComponent(video.name)}`).then(r => r.json()).then(setSegments)
+    fetch(`/api/segments/${encodeURIComponent(video.name)}`).then(r => r.json()).then(data => {
+      setSegments(data)
+      setCollapsed(new Set(data.map((_, i) => i)))
+    })
     fetch(`/api/subtitles/${encodeURIComponent(video.name)}?lang=en`).then(r => r.json()).then(d => setSubsEn(Array.isArray(d) ? d : []))
     fetch(`/api/subtitles/${encodeURIComponent(video.name)}?lang=es`).then(r => r.json()).then(d => setSubsEs(Array.isArray(d) ? d : []))
   }, [video.name])
@@ -553,7 +556,7 @@ export default function Player({ video, onBack }) {
     const ORDINALS = ['Primer','Segundo','Tercer','Cuarto','Quinto','Sexto','Séptimo','Octavo','Noveno','Décimo']
     const n = segments.length + 1
     const ordinal = n <= ORDINALS.length ? `${ORDINALS[n-1]} bloque` : `Bloque ${n}`
-    const phrase = newPhrase.trim() || sub?.phrase || ordinal
+    const phrase = newPhrase.trim() || ordinal
     const newSeg = {
       id: Date.now(), start: markStart, end: t, phrase,
       repeat: template.length,
