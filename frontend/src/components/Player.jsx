@@ -210,9 +210,10 @@ const FLAG_COLORS = [
 ]
 
 // ── Barra de progreso con banderas ───────────────────────
-function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag }) {
-  const wrapRef  = useRef(null)
-  const dragging = useRef(false)
+function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag, onMoveFlag }) {
+  const wrapRef     = useRef(null)
+  const dragging    = useRef(false)
+  const flagDrag    = useRef(null) // { idx, type:'start'|'end' }
   const [hover, setHover] = useState(null)
 
   function pct(t) { return duration ? Math.min(100, (t / duration) * 100) : 0 }
@@ -226,22 +227,36 @@ function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag }) {
   return (
     <div className="seekbar" ref={wrapRef}
       onPointerDown={e => {
+        if (flagDrag.current) return   // bandera tomó el evento
         e.preventDefault()
         dragging.current = true
         e.currentTarget.setPointerCapture(e.pointerId)
         onSeek(timeAt(e))
       }}
       onPointerMove={e => {
-        const t = timeAt(e)
+        const t  = timeAt(e)
         const rx = e.clientX - wrapRef.current.getBoundingClientRect().left
+        if (flagDrag.current) {
+          // arrastrar bandera: mover tiempo del fragmento
+          onMoveFlag(flagDrag.current.idx, flagDrag.current.type, t)
+          setHover({ x: rx, label: fmt(t) })
+          return
+        }
         const nearSeg = segments.find(s =>
           Math.abs(pct(s.start) - pct(t)) < 2 || Math.abs(pct(s.end) - pct(t)) < 2
         )
         setHover({ x: rx, label: nearSeg ? nearSeg.phrase : fmt(t) })
         if (dragging.current) onSeek(t)
       }}
-      onPointerUp={() => { dragging.current = false }}
-      onPointerLeave={() => setHover(null)}
+      onPointerUp={e => {
+        dragging.current = false
+        if (flagDrag.current) {
+          // al soltar la bandera persistimos el cambio
+          onMoveFlag(flagDrag.current.idx, flagDrag.current.type, timeAt(e), true)
+          flagDrag.current = null
+        }
+      }}
+      onPointerLeave={() => { setHover(null) }}
     >
       {/* Track (fondo gris) */}
       <div className="sb-track" />
@@ -256,19 +271,31 @@ function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag }) {
         return (
           <span key={seg.id ?? idx}>
             {/* Bandera de INICIO — arriba del track */}
-            <div className="sb-flag sb-flag-start"
+            <div className="sb-flag sb-flag-start sb-flag-draggable"
               style={{ left: `${pct(seg.start)}%`, '--flag-color': color }}
-              onPointerDown={e => { e.stopPropagation(); onSeek(seg.start) }}
-              title={`▶ ${seg.phrase}`}
+              onPointerDown={e => {
+                e.stopPropagation()
+                e.preventDefault()
+                flagDrag.current = { idx, type: 'start' }
+                wrapRef.current.setPointerCapture(e.pointerId)
+              }}
+              onPointerUp={e => { e.stopPropagation(); if (!flagDrag.current) onSeek(seg.start) }}
+              title={`⠿ Arrastrar inicio · ${seg.phrase}`}
             >
               <div className="sb-flag-label sb-flag-start-label" style={{ background: color }}>{idx + 1}▶</div>
               <div className="sb-flag-pole sb-flag-start-pole" style={{ background: color }} />
             </div>
-            {/* Bandera de FIN — abajo del track, pausa al click */}
-            <div className="sb-flag sb-flag-end"
+            {/* Bandera de FIN — abajo del track */}
+            <div className="sb-flag sb-flag-end sb-flag-draggable"
               style={{ left: `${pct(seg.end)}%` }}
-              onPointerDown={e => { e.stopPropagation(); onEndFlag(seg.end) }}
-              title={`⏸ ${seg.phrase}`}
+              onPointerDown={e => {
+                e.stopPropagation()
+                e.preventDefault()
+                flagDrag.current = { idx, type: 'end' }
+                wrapRef.current.setPointerCapture(e.pointerId)
+              }}
+              onPointerUp={e => { e.stopPropagation(); if (!flagDrag.current) onEndFlag(seg.end) }}
+              title={`⠿ Arrastrar fin · ${seg.phrase}`}
             >
               <div className="sb-flag-pole sb-flag-end-pole" />
               <div className="sb-flag-label sb-flag-end-label">■{idx + 1}</div>
@@ -559,6 +586,19 @@ export default function Player({ video, onBack }) {
     } catch(e) { alert('Error: ' + e.message) }
     finally { setDownloading(null) }
   }
+  function moveFlag(idx, type, time, persist = false) {
+    const t = Math.round(time * 100) / 100
+    setSegments(prev => {
+      const updated = prev.map((s, i) => {
+        if (i !== idx) return s
+        if (type === 'start') return { ...s, start: Math.min(t, s.end - 0.1) }
+        return { ...s, end: Math.max(t, s.start + 0.1) }
+      })
+      if (persist) persistSegs(updated)
+      return updated
+    })
+  }
+
   function deleteSegment(idx) {
     const updated = segments.filter((_, i) => i !== idx)
     setSegments(updated); persistSegs(updated)
@@ -766,6 +806,7 @@ export default function Player({ video, onBack }) {
               if (videoRef.current) { videoRef.current.currentTime = t; videoRef.current.pause() }
               stopLoop()
             }}
+            onMoveFlag={moveFlag}
           />
           <span className="vcb-time">{fmtT(videoDuration)}</span>
           <button className="vcb-btn" onClick={toggleMute}>{muted ? '🔇' : '🔊'}</button>
@@ -843,20 +884,6 @@ export default function Player({ video, onBack }) {
                 onKeyDown={e => e.key === 'Enter' && markOut()} autoFocus />
             </div>
           )}
-        </div>
-
-        {/* Sincronización automática */}
-        <div className="autosync-row">
-          <button
-            className={`autosync-btn ${syncing.en || syncing.es ? 'sync-busy' : ''}`}
-            onClick={async () => {
-              if (subsEn.length > 0) await autoSync('en')
-              if (subsEs.length > 0) await autoSync('es')
-            }}
-            disabled={syncing.en || syncing.es || (subsEn.length === 0 && subsEs.length === 0)}
-          >
-            {(syncing.en || syncing.es) ? '⏳ Analizando audio...' : '🎯 Ubicar bien tiempo de subtítulo'}
-          </button>
         </div>
 
         {/* Transcripción */}

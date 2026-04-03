@@ -69,9 +69,9 @@ export function StickerSelector({ onSelect }) {
   const origin   = useRef(null)
 
   function handleOpen() {
-    if (btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect()
-      setPos({ top: r.bottom + 6, left: r.left })
+    if (!open) {
+      // Abre en el panel de fragmentos (esquina superior derecha)
+      setPos({ top: 70, left: Math.max(0, window.innerWidth - 360) })
     }
     setOpen(o => !o)
   }
