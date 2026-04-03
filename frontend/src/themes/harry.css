@@ -319,25 +319,15 @@
 
 /* ═══════════ TARJETAS FRAGMENTO (.fc) ═══════════ */
 [data-theme="harry"] .fc {
-  background: linear-gradient(135deg, #c4a070 0%, #b8956a 40%, #c4a472 100%);
-  border: 1.5px solid var(--hp-gold-dark);
-  border-radius: 6px;
-  box-shadow: 0 2px 10px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.15);
+  background: url('./pergamino.png') no-repeat center / 100% 100%;
+  border: none;
+  border-radius: 4px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.65);
   position: relative;
   overflow: hidden;
 }
-/* Pergamino como textura de fondo — multiply hace el blanco transparente */
-[data-theme="harry"] .fc::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url('./pergamino.png') no-repeat center / 100% 100%;
-  mix-blend-mode: multiply;
-  opacity: 0.75;
-  pointer-events: none;
-  z-index: 0;
-}
-/* Todo el contenido del bloque por encima del pergamino */
+[data-theme="harry"] .fc::before { display: none; }
+/* Todo el contenido por encima */
 [data-theme="harry"] .fc > * { position: relative; z-index: 1; }
 [data-theme="harry"] .fc.fc-active {
   border-color: var(--hp-gold);
