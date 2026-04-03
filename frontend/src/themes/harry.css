@@ -51,6 +51,11 @@
   z-index: 2;
   transition: filter 0.25s ease;
 }
+/* Escoba en el topbar del player — más pequeña, pegada a la derecha */
+.escoba-player {
+  top: -6px; right: 180px;
+  width: 110px; height: 55px;
+}
 .escoba-deco:hover {
   filter: drop-shadow(0 0 8px #c9a84c) drop-shadow(0 0 18px rgba(201,168,76,.7)) brightness(1.12);
 }

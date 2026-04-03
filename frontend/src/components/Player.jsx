@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { StickerSelector } from './StickerSelector'
 import { ThemeDropdown } from './ThemeDropdown'
+import escobaImg from '../themes/escoba.png'
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
 const BUILTIN_STYLES = [
@@ -422,6 +423,14 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   const [editSubVal,   setEditSubVal]   = useState('')
   const [collapsed,    setCollapsed]    = useState(new Set())
   const [videoSize,    setVideoSize]    = useState(1)   // 0=chico 1=medio 2=grande
+  const [escobaAnim,   setEscobaAnim]   = useState('idle')
+
+  function handleEscobaClick() {
+    if (escobaAnim !== 'idle') return
+    setEscobaAnim('flyaway')
+    setTimeout(() => setEscobaAnim('return'), 900)
+    setTimeout(() => setEscobaAnim('idle'),  1700)
+  }
   const [clickFlash,   setClickFlash]   = useState(null) // 'play'|'pause'
   const VIDEO_SIZES = ['28vh', '42vh', '62vh']
   const VIDEO_SIZE_LABELS = ['Tamaño video: S', 'Tamaño video: M', 'Tamaño video: L']
@@ -772,6 +781,14 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
       {/* ── IZQUIERDA ── */}
       <div className="player-left">
         <div className="player-topbar">
+          {theme === 'harry' && (
+            <img
+              src={escobaImg}
+              className={`escoba-deco escoba-player escoba-${escobaAnim}`}
+              onClick={handleEscobaClick}
+              alt=""
+            />
+          )}
           <button className="back-btn" onClick={onBack}>← Volver</button>
           <span className="player-title">{video.name.replace(/\.[^.]+$/, '')}</span>
           <button className="vcb-btn video-size-btn" title="Cambiar tamaño video"
