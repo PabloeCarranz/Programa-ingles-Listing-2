@@ -917,7 +917,7 @@ export default function Player({ video, onBack }) {
                     <button className="fc-play-mini fc-stop-mini" onClick={stopLoop} title="Detener">■</button>
                   )}
                   <button className="fc-toggle" onClick={toggleCollapse} title={isCollapsed ? 'Expandir' : 'Colapsar'}>
-                    {isCollapsed ? '▸' : '▾'}
+                    {isCollapsed ? '▲' : '▼'}
                   </button>
                 </div>
 

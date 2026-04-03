@@ -390,11 +390,13 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; colo
   margin-bottom: 6px;
 }
 .fc-toggle {
-  background: none; border: none; color: #4a6a8a;
-  font-size: 0.75rem; cursor: pointer; padding: 0 2px;
-  transition: color .15s; flex-shrink: 0;
+  background: #0a1628; border: 1px solid #1e3a55; color: #63b3ed;
+  font-size: 1rem; cursor: pointer; padding: 3px 9px;
+  border-radius: 7px; flex-shrink: 0;
+  transition: background .15s, border-color .15s, color .15s;
+  line-height: 1;
 }
-.fc-toggle:hover { color: #90cdf4; }
+.fc-toggle:hover { background: #1a3050; border-color: #38bdf8; color: #e2e8f0; }
 .fc-play-mini {
   background: none; border: 1px solid #2b6cb0; color: #63b3ed;
   font-size: 0.7rem; border-radius: 4px; padding: 1px 6px;
