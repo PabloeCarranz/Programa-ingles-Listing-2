@@ -369,7 +369,11 @@ export default function Player({ video, onBack }) {
   const [subsEs,       setSubsEs]       = useState([])
   const [currentEn,    setCurrentEn]    = useState('')
   const [currentEs,    setCurrentEs]    = useState('')
-  const [stickers,          setStickers]          = useState([])
+  const _stickerKey = `stickers_${video.name}`
+  const [stickers, setStickers] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(_stickerKey) ?? '[]') ?? [] }
+    catch { return [] }
+  })
   const [videoTime,         setVideoTime]         = useState(0)
   const [videoDuration,     setVideoDuration]     = useState(0)
   const [playing,           setPlaying]           = useState(false)
@@ -430,6 +434,12 @@ export default function Player({ video, onBack }) {
     fetch(`/api/subtitles/${encodeURIComponent(video.name)}?lang=en`).then(r => r.json()).then(d => setSubsEn(Array.isArray(d) ? d : []))
     fetch(`/api/subtitles/${encodeURIComponent(video.name)}?lang=es`).then(r => r.json()).then(d => setSubsEs(Array.isArray(d) ? d : []))
   }, [video.name])
+
+  // Persistir stickers (excluir blob: URLs que son temporales del navegador)
+  useEffect(() => {
+    const persistable = stickers.filter(s => !s.url.startsWith('blob:'))
+    localStorage.setItem(_stickerKey, JSON.stringify(persistable))
+  }, [stickers, _stickerKey])
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.playbackRate = speed
