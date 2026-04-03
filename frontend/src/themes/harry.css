@@ -510,3 +510,263 @@
   border-radius: 4px;
 }
 [data-theme="harry"] .sticker-open-btn:hover { border-color: var(--hp-gold); color: var(--hp-gold-light); }
+
+/* ═══════════════════════════════════════════════════════════════
+   DECORACIONES EXTRA — velas, pluma, libros, pergamino, pociones
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Animación de llama de vela ── */
+@keyframes hp-flicker {
+  0%,100% {
+    filter: drop-shadow(0 0 5px #ffaa00) drop-shadow(0 0 10px #ff6600);
+    transform: translateY(-50%) scaleX(1)   rotate(0deg);
+  }
+  18% {
+    filter: drop-shadow(0 0 9px #ffcc44)  drop-shadow(0 0 18px #ff8800);
+    transform: translateY(-50%) scaleX(.96)  rotate(-1.5deg);
+  }
+  42% {
+    filter: drop-shadow(0 0 3px #ffaa00)  drop-shadow(0 0 7px #ff4400);
+    transform: translateY(-50%) scaleX(1.03) rotate(1.2deg);
+  }
+  67% {
+    filter: drop-shadow(0 0 12px #ffdd44) drop-shadow(0 0 22px #ffaa00);
+    transform: translateY(-50%) scaleX(.98)  rotate(-.7deg);
+  }
+}
+/* versión para elementos sin translateY */
+@keyframes hp-flicker-abs {
+  0%,100% {
+    filter: drop-shadow(0 0 5px #ffaa00) drop-shadow(0 0 10px #ff6600);
+    transform: scaleX(1)   rotate(0deg);
+  }
+  18% {
+    filter: drop-shadow(0 0 9px #ffcc44)  drop-shadow(0 0 18px #ff8800);
+    transform: scaleX(.96)  rotate(-1.5deg);
+  }
+  42% {
+    filter: drop-shadow(0 0 3px #ffaa00)  drop-shadow(0 0 7px #ff4400);
+    transform: scaleX(1.03) rotate(1.2deg);
+  }
+  67% {
+    filter: drop-shadow(0 0 12px #ffdd44) drop-shadow(0 0 22px #ffaa00);
+    transform: scaleX(.98)  rotate(-.7deg);
+  }
+}
+
+/* ── Velas flanqueando la topbar ── */
+[data-theme="harry"] .player-topbar {
+  position: relative;
+  padding-left:  36px;
+  padding-right: 36px;
+}
+[data-theme="harry"] .player-topbar::before,
+[data-theme="harry"] .player-topbar::after {
+  content: '🕯️';
+  position: absolute;
+  top: 50%;
+  font-size: 1.3rem;
+  animation: hp-flicker 2.6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+[data-theme="harry"] .player-topbar::before { left: 6px;  animation-delay: 0s;   }
+[data-theme="harry"] .player-topbar::after  { right: 6px; animation-delay: 0.85s; }
+
+/* ── Vela + pluma en la cabecera del panel derecho ── */
+[data-theme="harry"] .right-tabs { position: relative; }
+[data-theme="harry"] .right-tabs::before {
+  content: '🕯️';
+  position: absolute;
+  top: 50%; right: 32px;
+  font-size: 1.1rem;
+  animation: hp-flicker 3.1s ease-in-out infinite;
+  animation-delay: 1.3s;
+  pointer-events: none;
+  z-index: 1;
+}
+[data-theme="harry"] .right-tabs::after {
+  content: '🪶';
+  position: absolute;
+  top: 50%; right: 6px;
+  transform: translateY(-50%) rotate(-22deg);
+  font-size: 1.15rem;
+  opacity: .75;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Libros sutiles como marca de agua en el panel izquierdo ── */
+[data-theme="harry"] .player-left { position: relative; }
+[data-theme="harry"] .player-left::before {
+  content: '📚';
+  position: absolute;
+  bottom: 10px; left: 6px;
+  font-size: 1.5rem;
+  opacity: .1;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Vela sutil en esquina inferior del panel derecho ── */
+[data-theme="harry"] .player-right { position: relative; }
+[data-theme="harry"] .player-right::before {
+  content: '🕯️';
+  position: absolute;
+  bottom: 10px; right: 8px;
+  font-size: 1.3rem;
+  opacity: .15;
+  animation: hp-flicker-abs 4.2s ease-in-out infinite;
+  animation-delay: 0.5s;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Borde de pergamino rasgado en tarjetas de fragmento ── */
+[data-theme="harry"] .fc {
+  clip-path: polygon(
+    0%   0%,  100%  0%,  100% 100%,
+    97%  96%, 94%  100%, 91%  95%,  88% 100%,
+    85%  96%, 82%  100%, 79%  95%,  76% 100%,
+    73%  97%, 70%  100%, 67%  95%,  64% 100%,
+    61%  96%, 58%  100%, 55%  96%,  52% 100%,
+    49%  95%, 46%  100%, 43%  97%,  40% 100%,
+    37%  95%, 34%  100%, 31%  96%,  28% 100%,
+    25%  97%, 22%  100%, 19%  95%,  16% 100%,
+    13%  96%, 10%  100%, 7%   96%,  4%  100%,
+    1%   95%, 0%   100%
+  );
+  padding-bottom: 8px;
+}
+
+/* ═══════════ POCIONES — pills de estilo de subtítulo ═══════════ */
+
+/* default — pergamino cálido */
+[data-theme="harry"] .fc-style-pill.style-default {
+  background: linear-gradient(160deg, #c9b07a 0%, #9a7a4a 100%);
+  border-color: #7a5a2a; color: #1a0e00;
+}
+[data-theme="harry"] .fc-style-pill.style-default.fc-style-on {
+  background: linear-gradient(160deg, #e0c890 0%, #b8954a 100%);
+  border-color: var(--hp-gold); box-shadow: 0 0 7px rgba(201,168,76,.5);
+}
+
+/* comic — amarillo explosivo */
+[data-theme="harry"] .fc-style-pill.style-comic {
+  background: linear-gradient(160deg, #ffe040 0%, #ff9900 50%, #cc5500 100%);
+  border-color: #cc5500; color: #1a0800;
+}
+[data-theme="harry"] .fc-style-pill.style-comic.fc-style-on {
+  box-shadow: 0 0 9px rgba(255,153,0,.6);
+}
+
+/* gothic — poción oscura violeta */
+[data-theme="harry"] .fc-style-pill.style-gothic {
+  background: linear-gradient(160deg, #5a1e7a 0%, #33085a 50%, #180030 100%);
+  border-color: #8833bb; color: #ddb8ff;
+}
+[data-theme="harry"] .fc-style-pill.style-gothic.fc-style-on {
+  box-shadow: 0 0 9px rgba(136,51,187,.55);
+}
+
+/* console — poción verde terminal */
+[data-theme="harry"] .fc-style-pill.style-console {
+  background: linear-gradient(160deg, #0c2e0c 0%, #071a07 50%, #030d03 100%);
+  border-color: #00aa44; color: #00ff66;
+}
+[data-theme="harry"] .fc-style-pill.style-console.fc-style-on {
+  box-shadow: 0 0 9px rgba(0,255,102,.45);
+}
+
+/* neon — poción verde neón */
+[data-theme="harry"] .fc-style-pill.style-neon {
+  background: linear-gradient(160deg, #09321d 0%, #041a0e 50%, #020d07 100%);
+  border-color: #00ff88; color: #00ff88;
+}
+[data-theme="harry"] .fc-style-pill.style-neon.fc-style-on {
+  background: linear-gradient(160deg, #00ee77 0%, #009944 100%);
+  color: #001a0d; box-shadow: 0 0 11px rgba(0,255,136,.5);
+}
+
+/* neonblue — poción azul neón */
+[data-theme="harry"] .fc-style-pill.style-neonblue {
+  background: linear-gradient(160deg, #091a33 0%, #041122 50%, #020a15 100%);
+  border-color: #00bbff; color: #00bbff;
+}
+[data-theme="harry"] .fc-style-pill.style-neonblue.fc-style-on {
+  background: linear-gradient(160deg, #00bbff 0%, #0077bb 100%);
+  color: #001525; box-shadow: 0 0 11px rgba(0,187,255,.5);
+}
+
+/* fire — poción de fuego */
+[data-theme="harry"] .fc-style-pill.style-fire {
+  background: linear-gradient(160deg, #cc2200 0%, #881100 50%, #440800 100%);
+  border-color: #ff4400; color: #ffcc88;
+}
+[data-theme="harry"] .fc-style-pill.style-fire.fc-style-on {
+  background: linear-gradient(160deg, #ff5500 0%, #bb2200 50%, #881100 100%);
+  box-shadow: 0 0 11px rgba(255,68,0,.55);
+}
+
+/* ice — poción de hielo */
+[data-theme="harry"] .fc-style-pill.style-ice {
+  background: linear-gradient(160deg, #6ab8dd 0%, #3388bb 50%, #0e5588 100%);
+  border-color: #99ddff; color: #e8f8ff;
+}
+[data-theme="harry"] .fc-style-pill.style-ice.fc-style-on {
+  background: linear-gradient(160deg, #aaddff 0%, #66bbee 50%, #3388bb 100%);
+  box-shadow: 0 0 11px rgba(102,187,238,.55);
+}
+
+/* gold — poción dorada */
+[data-theme="harry"] .fc-style-pill.style-gold {
+  background: linear-gradient(160deg, #c9a84c 0%, #8b6014 50%, #4d3308 100%);
+  border-color: #e8c96a; color: #fff4d4;
+}
+[data-theme="harry"] .fc-style-pill.style-gold.fc-style-on {
+  background: linear-gradient(160deg, #ffe066 0%, #c9a84c 50%, #8b6014 100%);
+  box-shadow: 0 0 11px rgba(201,168,76,.65);
+}
+
+/* bubblegum — poción rosa chicle */
+[data-theme="harry"] .fc-style-pill.style-bubblegum {
+  background: linear-gradient(160deg, #ee5599 0%, #bb2266 50%, #881133 100%);
+  border-color: #ff88cc; color: #ffe8f4;
+}
+[data-theme="harry"] .fc-style-pill.style-bubblegum.fc-style-on {
+  background: linear-gradient(160deg, #ff99cc 0%, #ee5599 50%, #bb2266 100%);
+  box-shadow: 0 0 11px rgba(255,136,204,.5);
+}
+
+/* cinema — poción negra cine */
+[data-theme="harry"] .fc-style-pill.style-cinema {
+  background: linear-gradient(160deg, #1c1c1c 0%, #0e0e0e 50%, #030303 100%);
+  border-color: #777777; color: #cccccc;
+}
+[data-theme="harry"] .fc-style-pill.style-cinema.fc-style-on {
+  background: linear-gradient(160deg, #333 0%, #1a1a1a 100%);
+  box-shadow: 0 0 8px rgba(120,120,120,.4);
+}
+
+/* shadow — poción de sombra */
+[data-theme="harry"] .fc-style-pill.style-shadow {
+  background: linear-gradient(160deg, #2e3e50 0%, #1c2c3c 50%, #0e1a28 100%);
+  border-color: #4a6080; color: #a0b8cc;
+}
+[data-theme="harry"] .fc-style-pill.style-shadow.fc-style-on {
+  background: linear-gradient(160deg, #3a5068 0%, #2e3e50 100%);
+  box-shadow: 0 0 8px rgba(74,96,128,.5);
+}
+
+/* outline — poción invisible/contorno */
+[data-theme="harry"] .fc-style-pill.style-outline {
+  background: transparent;
+  border: 1.5px dashed var(--hp-gold-dark);
+  color: var(--hp-parchment-dk);
+}
+[data-theme="harry"] .fc-style-pill.style-outline.fc-style-on {
+  border-style: solid;
+  border-color: var(--hp-gold);
+  color: var(--hp-gold);
+  box-shadow: 0 0 6px var(--hp-glow);
+}
