@@ -333,7 +333,9 @@
    aspect-ratio mantiene las proporciones reales del rollo */
 [data-theme="harry"] .fc:has(.fc-collapsed-name) {
   background: url('./pergamino.png') no-repeat center / 100% 100%;
-  aspect-ratio: 2 / 1;
+  aspect-ratio: 3 / 1;
+  width: 114%;
+  margin-left: -7%;
   background-color: transparent;
   box-shadow: none;
   border: none !important;
@@ -343,7 +345,7 @@
   justify-content: center;
   gap: 4px;
   padding: 0;
-  margin-bottom: 1px;
+  margin-bottom: -4px;
   cursor: pointer;
   transition: transform 0.28s ease, filter 0.28s ease;
 }
