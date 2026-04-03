@@ -494,7 +494,7 @@ export default function Player({ video, onBack }) {
           setLooping(false); setActive(null)
           currentRepRef.current = 0; setCurrentRepDisplay(0)
           setActiveSubOverride(null)
-          if (videoRef.current) videoRef.current.playbackRate = 1
+          if (videoRef.current) { videoRef.current.playbackRate = 1; videoRef.current.pause() }
           loopSeeking.current = false
         } else {
           currentRepRef.current = nextRep
