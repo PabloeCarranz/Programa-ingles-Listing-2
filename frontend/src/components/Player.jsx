@@ -362,6 +362,10 @@ export default function Player({ video, onBack }) {
   const [editSubKey,   setEditSubKey]   = useState(null)
   const [editSubVal,   setEditSubVal]   = useState('')
   const [collapsed,    setCollapsed]    = useState(new Set())
+  const [videoSize,    setVideoSize]    = useState(1)   // 0=chico 1=medio 2=grande
+  const [clickFlash,   setClickFlash]   = useState(null) // 'play'|'pause'
+  const VIDEO_SIZES = ['28vh', '42vh', '62vh']
+  const VIDEO_SIZE_LABELS = ['↕ S', '↕ M', '↕ L']
 
   // ── Cargar datos ──
   useEffect(() => {
@@ -682,15 +686,34 @@ export default function Player({ video, onBack }) {
         <div className="player-topbar">
           <button className="back-btn" onClick={onBack}>← Volver</button>
           <span className="player-title">{video.name.replace(/\.[^.]+$/, '')}</span>
+          <button className="vcb-btn video-size-btn" title="Cambiar tamaño video"
+            onClick={() => setVideoSize(s => (s + 1) % 3)}>
+            {VIDEO_SIZE_LABELS[videoSize]}
+          </button>
         </div>
 
         <div className="video-wrap" ref={videoWrap}
-          onClick={() => setSelectedStickerId(null)}
+          style={{ '--video-max-h': VIDEO_SIZES[videoSize] }}
+          onClick={e => {
+            setSelectedStickerId(null)
+            // solo clic directo sobre el wrap (no sobre stickers ni subs)
+            if (e.target === videoWrap.current || e.target === videoRef.current) {
+              const v = videoRef.current; if (!v) return
+              if (v.paused) { v.play(); setClickFlash('play') }
+              else          { v.pause(); setClickFlash('pause') }
+              setTimeout(() => setClickFlash(null), 600)
+            }
+          }}
         >
           <video ref={videoRef} className="video-el"
             src={`/videos/${encodeURIComponent(video.name)}`}
             preload="metadata"
             onLoadedMetadata={e => setVideoDuration(e.target.duration)} />
+          {clickFlash && (
+            <div className={`click-flash click-flash-${clickFlash}`}>
+              {clickFlash === 'play' ? '▶' : '⏸'}
+            </div>
+          )}
           {/* --- STICKERS sobre el video --- */}
           {stickers.filter(s =>
             (s.startTime == null && s.endTime == null) ||
