@@ -1033,7 +1033,22 @@ export default function Player({ video, onBack }) {
                   <div className="fc-playing-top">
                     <div className="fc-dots">
                       {Array.from({ length: segRepeat }, (_, i) => (
-                        <span key={i} className={`fc-dot ${i < currentRepDisplay ? 'fc-dot-done' : i === currentRepDisplay ? 'fc-dot-current' : ''}`} />
+                        <span key={i}
+                          className={`fc-dot fc-dot-btn ${i < currentRepDisplay ? 'fc-dot-done' : i === currentRepDisplay ? 'fc-dot-current' : ''}`}
+                          title={`Vuelta ${i + 1}`}
+                          onClick={() => {
+                            const rc = (seg.repConfig ?? [])[i] ?? { speed: 1, en: true, es: false }
+                            currentRepRef.current = i
+                            setCurrentRepDisplay(i)
+                            setActiveSubOverride({ en: rc.en ?? true, es: rc.es ?? false })
+                            if (videoRef.current) {
+                              videoRef.current.playbackRate = rc.speed ?? 1
+                              videoRef.current.currentTime = seg.start
+                              videoRef.current.play()
+                            }
+                            loopSeeking.current = false
+                          }}
+                        />
                       ))}
                     </div>
                     <div className="fc-playing-info">
