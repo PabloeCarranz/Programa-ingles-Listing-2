@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from 'react'
+import { ThemeDropdown } from './ThemeDropdown'
 
 const VIDEO_EXTS = ['.mp4', '.mkv', '.avi', '.mov', '.webm', '.m4v']
 
-export default function VideoList({ onSelect }) {
+export default function VideoList({ onSelect, theme, onThemeChange }) {
   const [videos,   setVideos]   = useState([])
   const [loading,  setLoading]  = useState(true)
   const [dragging, setDragging] = useState(false)
@@ -54,6 +55,9 @@ export default function VideoList({ onSelect }) {
       <div className="vlist-header">
         <h1>🎧 Listening</h1>
         <p>Seleccioná un video para practicar</p>
+        <div className="vlist-theme-row">
+          <ThemeDropdown theme={theme} onChange={onThemeChange} />
+        </div>
       </div>
 
       {/* Drop zone */}

@@ -1,33 +1,40 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
 
-/* ── Selector de tema ── */
+/* ── Selector de tema (dropdown) ── */
 .app-shell { position: relative; }
-.theme-bar {
-  position: fixed; top: 8px; right: 12px;
-  display: flex; gap: 6px; z-index: 9999;
+
+.theme-dropdown {
+  position: relative;
+  display: inline-flex;
 }
-.theme-btn {
-  padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
-  cursor: pointer; border: 1.5px solid #2d3748; background: rgba(15,17,23,.85);
-  color: #a0aec0; backdrop-filter: blur(6px); transition: all .2s;
+.theme-dd-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; border: 1.5px solid #2d3748; background: rgba(15,17,23,.9);
+  color: #a0aec0; transition: all .2s; white-space: nowrap;
+}
+.theme-dd-btn:hover { border-color: #4299e1; color: #e2e8f0; }
+.theme-dd-arrow { font-size: 0.6rem; opacity: .7; }
+.theme-dd-menu {
+  position: absolute; top: calc(100% + 4px); right: 0;
+  background: #1a202c; border: 1.5px solid #2d3748;
+  border-radius: 8px; padding: 4px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 140px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.6);
+}
+.theme-dd-item {
+  padding: 6px 12px; border-radius: 5px; font-size: 0.75rem;
+  cursor: pointer; border: none; background: transparent;
+  color: #a0aec0; text-align: left; transition: background .15s, color .15s;
   white-space: nowrap;
 }
-.theme-btn:hover { border-color: #4299e1; color: #e2e8f0; }
-.theme-btn-active { border-color: #63b3ed; color: #63b3ed; background: rgba(66,153,225,.15); }
+.theme-dd-item:hover { background: rgba(66,153,225,.15); color: #e2e8f0; }
+.theme-dd-active { background: rgba(66,153,225,.2) !important; color: #63b3ed !important; font-weight: 700; }
 
-/* Harry Potter theme-bar override */
-[data-theme="harry"] .theme-btn {
-  background: rgba(26,14,5,.85);
-  border-color: #8b6014;
-  color: #b8956a;
-}
-[data-theme="harry"] .theme-btn:hover { border-color: #c9a84c; color: #e8c96a; }
-[data-theme="harry"] .theme-btn-active {
-  border-color: #c9a84c;
-  color: #c9a84c;
-  background: rgba(201,168,76,.15);
-}
+/* Fila de tema en el video list */
+.vlist-theme-row { margin-top: 12px; display: flex; justify-content: center; }
 
 /* ── VIDEO LIST ── */
 .vlist-wrap  { max-width: 700px; margin: 0 auto; padding: 32px 16px; }

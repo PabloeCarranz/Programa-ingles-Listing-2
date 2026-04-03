@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import VideoList from './components/VideoList'
 import Player from './components/Player'
-import { THEMES, applyTheme, loadSavedTheme } from './themes/themes'
+import { applyTheme, loadSavedTheme } from './themes/themes'
 
 export default function App() {
   const [video, setVideo] = useState(null)
@@ -14,24 +14,10 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {/* Selector de tema — siempre visible arriba a la derecha */}
-      <div className="theme-bar">
-        {THEMES.map(t => (
-          <button
-            key={t.id}
-            className={`theme-btn ${theme === t.id ? 'theme-btn-active' : ''}`}
-            onClick={() => handleTheme(t.id)}
-            title={t.label}
-          >
-            {t.icon} {t.label}
-          </button>
-        ))}
-      </div>
-
       {!video ? (
-        <VideoList onSelect={setVideo} />
+        <VideoList onSelect={setVideo} theme={theme} onThemeChange={handleTheme} />
       ) : (
-        <Player video={video} onBack={() => setVideo(null)} />
+        <Player video={video} onBack={() => setVideo(null)} theme={theme} onThemeChange={handleTheme} />
       )}
     </div>
   )

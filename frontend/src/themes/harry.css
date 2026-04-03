@@ -511,6 +511,36 @@
 }
 [data-theme="harry"] .sticker-open-btn:hover { border-color: var(--hp-gold); color: var(--hp-gold-light); }
 
+/* ── Dropdown de tema ── */
+[data-theme="harry"] .theme-dd-btn {
+  background: linear-gradient(180deg, #3d2510 0%, #2d1a0a 100%);
+  border-color: var(--hp-gold-dark);
+  color: var(--hp-parchment-dk);
+  font-family: var(--hp-serif);
+  box-shadow: 0 1px 4px rgba(0,0,0,.5);
+}
+[data-theme="harry"] .theme-dd-btn:hover {
+  border-color: var(--hp-gold);
+  color: var(--hp-gold-light);
+}
+[data-theme="harry"] .theme-dd-menu {
+  background: linear-gradient(180deg, #2d1a0a 0%, #1e1005 100%);
+  border: 1.5px solid var(--hp-gold-dark);
+  box-shadow: 0 8px 28px rgba(0,0,0,.8), 0 0 12px var(--hp-glow);
+}
+[data-theme="harry"] .theme-dd-item {
+  color: var(--hp-parchment-dk);
+  font-family: var(--hp-serif);
+}
+[data-theme="harry"] .theme-dd-item:hover {
+  background: rgba(201,168,76,.15);
+  color: var(--hp-gold-light);
+}
+[data-theme="harry"] .theme-dd-active {
+  background: rgba(201,168,76,.2) !important;
+  color: var(--hp-gold) !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    DECORACIONES EXTRA — velas, pluma, libros, pergamino, pociones
    ═══════════════════════════════════════════════════════════════ */

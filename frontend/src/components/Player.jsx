@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { StickerSelector } from './StickerSelector';
+import { StickerSelector } from './StickerSelector'
+import { ThemeDropdown } from './ThemeDropdown'
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
 const BUILTIN_STYLES = [
@@ -358,7 +359,7 @@ function RepSchedule({ repConfig, activeRep = null }) {
 }
 
 // ── Player principal ──────────────────────────────────────
-export default function Player({ video, onBack }) {
+export default function Player({ video, onBack, theme, onThemeChange }) {
   const videoRef   = useRef(null)
   const videoWrap  = useRef(null)
   const srtEnInput = useRef(null)
@@ -777,6 +778,7 @@ export default function Player({ video, onBack }) {
             onClick={() => setVideoSize(s => (s + 1) % 3)}>
             {VIDEO_SIZE_LABELS[videoSize]}
           </button>
+          <ThemeDropdown theme={theme} onChange={onThemeChange} />
         </div>
 
         <div className="video-wrap" ref={videoWrap}
