@@ -550,7 +550,10 @@ export default function Player({ video, onBack }) {
     const t = videoRef.current?.currentTime ?? 0
     if (markStart === null || t <= markStart) return
     const sub    = subsEn.find(s => s.start >= markStart && s.end <= t)
-    const phrase = newPhrase.trim() || sub?.phrase || `Fragmento ${segments.length + 1}`
+    const ORDINALS = ['Primer','Segundo','Tercer','Cuarto','Quinto','Sexto','Séptimo','Octavo','Noveno','Décimo']
+    const n = segments.length + 1
+    const ordinal = n <= ORDINALS.length ? `${ORDINALS[n-1]} bloque` : `Bloque ${n}`
+    const phrase = newPhrase.trim() || sub?.phrase || ordinal
     const newSeg = {
       id: Date.now(), start: markStart, end: t, phrase,
       repeat: template.length,
