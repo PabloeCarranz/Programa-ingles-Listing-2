@@ -333,7 +333,7 @@
    aspect-ratio mantiene las proporciones reales del rollo */
 [data-theme="harry"] .fc:has(.fc-collapsed-name) {
   background: url('./pergamino.png') no-repeat center / 100% 100%;
-  aspect-ratio: 5 / 2;
+  aspect-ratio: 9 / 4;
   background-color: transparent;
   box-shadow: none;
   border: none !important;
@@ -341,8 +341,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px 0 6px;
-  margin-bottom: 2px;
+  gap: 4px;
+  padding: 0;
+  margin-bottom: 4px;
   cursor: pointer;
   transition: transform 0.28s ease, filter 0.28s ease;
 }
@@ -354,11 +355,11 @@
 /* Título centrado en la zona plana del rollo */
 [data-theme="harry"] .fc:has(.fc-collapsed-name) .fc-collapsed-name {
   font-family: var(--hp-serif);
-  font-size: 0.86rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: var(--hp-ink);
   text-align: center;
-  padding: 0 18%;       /* 18% = bordea los extremos enrollados */
+  width: 66%;           /* zona plana del rollo, sin los extremos enrollados */
   line-height: 1.3;
   text-shadow: 0 1px 0 rgba(255,248,220,.5);
   white-space: normal;
@@ -372,8 +373,9 @@
   justify-content: center;
   align-items: center;
   gap: 8px;
-  margin: 2px 0 0;
-  padding: 0 0 0 14px;
+  margin: 0;
+  padding: 0;
+  width: 66%;           /* mismo ancho que el título, todo alineado */
 }
 [data-theme="harry"] .fc:has(.fc-collapsed-name) .fc-time {
   font-size: 0.66rem;
