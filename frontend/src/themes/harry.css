@@ -319,21 +319,26 @@
 
 /* ═══════════ TARJETAS FRAGMENTO (.fc) ═══════════ */
 [data-theme="harry"] .fc {
-  background:
-    linear-gradient(135deg, #c4a070 0%, #b8956a 40%, #c4a472 100%);
+  background: linear-gradient(135deg, #c4a070 0%, #b8956a 40%, #c4a472 100%);
   border: 1.5px solid var(--hp-gold-dark);
   border-radius: 6px;
   box-shadow: 0 2px 10px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.15);
   position: relative;
   overflow: hidden;
 }
-/* Marca de agua sutil de pergamino */
+/* Pergamino como textura de fondo — multiply hace el blanco transparente */
 [data-theme="harry"] .fc::before {
-  content: '⚡';
-  position: absolute; right: 10px; bottom: 6px;
-  font-size: 3.5rem; opacity: .05; pointer-events: none;
-  color: var(--hp-ink);
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('./pergamino.png') no-repeat center / 100% 100%;
+  mix-blend-mode: multiply;
+  opacity: 0.75;
+  pointer-events: none;
+  z-index: 0;
 }
+/* Todo el contenido del bloque por encima del pergamino */
+[data-theme="harry"] .fc > * { position: relative; z-index: 1; }
 [data-theme="harry"] .fc.fc-active {
   border-color: var(--hp-gold);
   box-shadow: 0 0 16px var(--hp-glow), 0 2px 10px rgba(0,0,0,.5);
@@ -661,22 +666,6 @@
   z-index: 0;
 }
 
-/* ── Borde de pergamino rasgado en tarjetas de fragmento ── */
-[data-theme="harry"] .fc {
-  clip-path: polygon(
-    0%   0%,  100%  0%,  100% 100%,
-    97%  96%, 94%  100%, 91%  95%,  88% 100%,
-    85%  96%, 82%  100%, 79%  95%,  76% 100%,
-    73%  97%, 70%  100%, 67%  95%,  64% 100%,
-    61%  96%, 58%  100%, 55%  96%,  52% 100%,
-    49%  95%, 46%  100%, 43%  97%,  40% 100%,
-    37%  95%, 34%  100%, 31%  96%,  28% 100%,
-    25%  97%, 22%  100%, 19%  95%,  16% 100%,
-    13%  96%, 10%  100%, 7%   96%,  4%  100%,
-    1%   95%, 0%   100%
-  );
-  padding-bottom: 8px;
-}
 
 /* ═══════════ POCIONES — pills de estilo de subtítulo ═══════════ */
 
