@@ -490,12 +490,11 @@ export default function Player({ video, onBack }) {
         const totalReps = seg.repeat ?? 1
         const nextRep   = currentRepRef.current + 1
         if (nextRep >= totalReps) {
-          // Terminaron todas las repeticiones
+          // Terminaron todas las repeticiones — loopSeeking queda en true hasta el próximo playSegment
           setLooping(false); setActive(null)
           currentRepRef.current = 0; setCurrentRepDisplay(0)
           setActiveSubOverride(null)
           if (videoRef.current) { videoRef.current.playbackRate = 1; videoRef.current.pause() }
-          loopSeeking.current = false
         } else {
           currentRepRef.current = nextRep
           setCurrentRepDisplay(nextRep)
