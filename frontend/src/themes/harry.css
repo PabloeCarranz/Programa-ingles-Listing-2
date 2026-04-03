@@ -638,9 +638,9 @@
   content: '';
   position: absolute;
   bottom: 16px; left: 50%; transform: translateX(-50%);
-  width: 130px; height: 106px;
+  width: 220px; height: 180px;
   background: url('./sombrero.png') no-repeat center / contain;
-  opacity: 0.10;
+  opacity: 0.28;
   pointer-events: none;
   z-index: 0;
 }
@@ -650,9 +650,9 @@
   content: '';
   position: absolute;
   bottom: 14px; right: 6px;
-  width: 190px; height: 95px;
+  width: 320px; height: 160px;
   background: url('./escoba.png') no-repeat right bottom / contain;
-  opacity: 0.09;
+  opacity: 0.22;
   pointer-events: none;
   z-index: 0;
 }
