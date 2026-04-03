@@ -436,10 +436,11 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; colo
 .fc-time {
   font-size: 0.68rem; color: #4a6a8a; font-family: monospace;
 }
-/* Vista colapsada: solo nombre en gris */
+/* Nombre visible cuando colapsado (arriba del header) */
 .fc-collapsed-name {
-  font-size: 0.82rem; color: #90adc0; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis; flex: 1; margin: 0 8px;
+  font-size: 0.78rem; font-weight: 600; color: #90cdf4;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 3px; padding: 0 2px;
 }
 
 /* Nombre */
@@ -728,6 +729,18 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; colo
   box-shadow: 0 0 6px #ff3030, 0 0 14px #ff000088;
 }
 .sb-flag-end-pole { background: #ff2020; box-shadow: 0 0 4px #ff3030; }
+
+/* Bandera pendiente de inicio */
+@keyframes pending-pulse {
+  0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+}
+.sb-mark-pending { animation: pending-pulse 0.9s ease-in-out infinite; pointer-events: none; }
+.sb-mark-pending-label {
+  background: #f6e05e; color: #000; font-size: 0.55rem;
+  font-weight: 800; padding: 1px 4px; border-radius: 3px; white-space: nowrap;
+  box-shadow: 0 0 6px #f6e05e88;
+}
+.sb-mark-pending-pole { background: #f6e05e; width: 2px; height: 10px; box-shadow: 0 0 4px #f6e05e; }
 
 /* Tooltip */
 .sb-tooltip {

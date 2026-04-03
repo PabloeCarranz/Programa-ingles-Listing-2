@@ -213,7 +213,7 @@ const FLAG_COLORS = [
 // ── Barra de progreso con banderas ───────────────────────
 const FLAG_DRAG_THRESHOLD = 6 // px mínimos para considerar arrastre
 
-function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag, onMoveFlag }) {
+function SeekBar({ duration, currentTime, segments, markStart, onSeek, onEndFlag, onMoveFlag }) {
   const wrapRef     = useRef(null)
   const dragging    = useRef(false)
   const flagPending = useRef(null) // { idx, type, startX } — esperando umbral
@@ -319,6 +319,17 @@ function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag, onMoveFla
           </span>
         )
       })}
+
+      {/* Bandera temporal de inicio pendiente */}
+      {markStart != null && duration > 0 && (
+        <div className="sb-flag sb-flag-start sb-mark-pending"
+          style={{ left: `${pct(markStart)}%` }}
+          title={`Inicio marcado: ${fmt(markStart)}`}
+        >
+          <div className="sb-flag-label sb-mark-pending-label">[ ▶</div>
+          <div className="sb-flag-pole sb-mark-pending-pole" />
+        </div>
+      )}
 
       {hover && (
         <div className="sb-tooltip" style={{
@@ -822,6 +833,7 @@ export default function Player({ video, onBack }) {
             duration={videoDuration}
             currentTime={videoTime}
             segments={segments}
+            markStart={markStart}
             onSeek={t => { if (videoRef.current) videoRef.current.currentTime = t; stopLoop() }}
             onEndFlag={t => {
               if (videoRef.current) { videoRef.current.currentTime = t; videoRef.current.pause() }
@@ -975,12 +987,12 @@ export default function Player({ video, onBack }) {
               return (
               <div key={seg.id ?? idx} className={`fc ${isActive ? 'fc-active' : ''}`}>
 
-                {/* Header: tiempo + nombre (si colapsado) + toggle */}
+                {/* Header siempre visible */}
+                {isCollapsed && (
+                  <div className="fc-collapsed-name">{seg.phrase}</div>
+                )}
                 <div className="fc-header">
                   <div className="fc-time">{fmt(seg.start)} → {fmt(seg.end)}</div>
-                  {isCollapsed && (
-                    <span className="fc-collapsed-name" title={seg.phrase}>{seg.phrase}</span>
-                  )}
                   {isCollapsed && !isActive && (
                     <button className="fc-play-mini" onClick={() => playSegment(idx)} title="Reproducir">▶</button>
                   )}
