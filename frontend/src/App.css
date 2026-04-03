@@ -365,6 +365,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; colo
 .mark-btn:hover:not(:disabled) { border-color: #4299e1; color: #4299e1; }
 .mark-btn.active   { border-color: #48bb78; color: #48bb78; }
 .mark-btn:disabled { opacity: .4; cursor: default; }
+.mark-btn-stop { border-color: #fc8181 !important; color: #fc8181 !important; border-style: solid !important; font-weight: 700; animation: pending-pulse 0.8s ease-in-out infinite; }
 .mark-phrase-row   { margin-top: 8px; }
 .mark-input        { width: 100%; padding: 7px 12px; background: #1a202c; border: 1.5px solid #4299e1; border-radius: 8px; color: #e2e8f0; font-size: 0.9rem; outline: none; }
 

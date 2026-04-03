@@ -559,7 +559,12 @@ export default function Player({ video, onBack }) {
     setActiveSubOverride(null)
     if (videoRef.current) videoRef.current.playbackRate = speed
   }
-  function markIn()  { setMarkStart(videoRef.current?.currentTime ?? 0); setMarking(true); setNewPhrase('') }
+  function markIn() {
+    setMarkStart(videoRef.current?.currentTime ?? 0)
+    setMarking(true)
+    setNewPhrase('')
+    videoRef.current?.play()
+  }
   function markOut() {
     const t = videoRef.current?.currentTime ?? 0
     if (markStart === null || t <= markStart) return
@@ -905,9 +910,15 @@ export default function Player({ video, onBack }) {
         <div className="mark-panel">
           <div className="mark-title">✂️ Marcar fragmento</div>
           <div className="mark-row">
-            <button className={`mark-btn ${markStart !== null ? 'active' : ''}`} onClick={markIn}>
-              {markStart !== null ? `▶ Inicio: ${fmt(markStart)}` : '[ Marcar inicio'}
-            </button>
+            {marking && playing ? (
+              <button className="mark-btn mark-btn-stop" onClick={() => videoRef.current?.pause()}>
+                ⏹ Stop
+              </button>
+            ) : (
+              <button className={`mark-btn ${markStart !== null ? 'active' : ''}`} onClick={markIn}>
+                {markStart !== null ? `▶ Inicio: ${fmt(markStart)}` : '[ Marcar inicio'}
+              </button>
+            )}
             <button className="mark-btn" onClick={markOut} disabled={markStart === null}>] Marcar fin</button>
           </div>
           {marking && (
