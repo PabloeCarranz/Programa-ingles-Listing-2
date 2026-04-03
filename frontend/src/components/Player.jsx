@@ -407,7 +407,7 @@ export default function Player({ video, onBack }) {
   const [videoSize,    setVideoSize]    = useState(1)   // 0=chico 1=medio 2=grande
   const [clickFlash,   setClickFlash]   = useState(null) // 'play'|'pause'
   const VIDEO_SIZES = ['28vh', '42vh', '62vh']
-  const VIDEO_SIZE_LABELS = ['↕ S', '↕ M', '↕ L']
+  const VIDEO_SIZE_LABELS = ['Tamaño video: S', 'Tamaño video: M', 'Tamaño video: L']
 
   // ── Cargar datos ──
   useEffect(() => {
