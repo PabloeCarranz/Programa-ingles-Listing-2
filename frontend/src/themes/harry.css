@@ -618,7 +618,22 @@
   }
 }
 
-/* (topbar sin velas — el espacio es necesario para los controles) */
+/* ── Sombrero chico en el topbar ── */
+[data-theme="harry"] .player-topbar {
+  position: relative;
+  padding-left: 52px;
+}
+[data-theme="harry"] .player-topbar::before {
+  content: '';
+  position: absolute;
+  left: 4px; top: 50%;
+  transform: translateY(-50%);
+  width: 44px; height: 44px;
+  background: url('./sombrero.png') no-repeat center / contain;
+  pointer-events: none;
+  opacity: 0.92;
+  z-index: 1;
+}
 
 /* ── Pluma en la cabecera del panel derecho ── */
 [data-theme="harry"] .right-tabs { position: relative; }
@@ -633,17 +648,6 @@
   z-index: 1;
 }
 
-/* ── Sombrero+libros como sello decorativo en panel derecho ── */
-[data-theme="harry"] .player-right::after {
-  content: '';
-  position: absolute;
-  bottom: 16px; left: 50%; transform: translateX(-50%);
-  width: 220px; height: 180px;
-  background: url('./sombrero.png') no-repeat center / contain;
-  opacity: 0.28;
-  pointer-events: none;
-  z-index: 0;
-}
 
 /* ── Escoba volando en esquina del panel izquierdo ── */
 [data-theme="harry"] .player-left::before {
