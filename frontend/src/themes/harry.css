@@ -312,8 +312,10 @@
 }
 [data-theme="harry"] .style-btn > * { position: relative; z-index: 1; }
 
-/* ── COMIC — botella sin caja rectangular ── */
-[data-theme="harry"] .style-btn.style-comic {
+/* ── Base compartida: botellas sin caja ── */
+[data-theme="harry"] .style-btn.style-comic,
+[data-theme="harry"] .style-btn.style-gothic,
+[data-theme="harry"] .style-btn.style-console {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -321,15 +323,16 @@
   min-height: 112px;
   padding: 0;
   overflow: visible;
+  position: relative;
+  z-index: 0;
   transform: scale(1.9);
   transform-origin: center bottom;
   transition: filter 0.2s ease, transform 0.2s ease;
-  margin-right: -18px;
-  z-index: 1;
+  margin: 0 4px;
 }
-[data-theme="harry"] .style-btn.style-comic::before { display: none; }
-[data-theme="harry"] .style-btn.style-comic:hover { transform: scale(1.98) translateY(-2px); transform-origin: center bottom; filter: drop-shadow(0 0 6px #ffe97a) drop-shadow(0 0 18px rgba(255,210,50,.6)) brightness(1.15) saturate(1.2); transition: filter 0.2s ease, transform 0.2s ease; z-index: 3; }
-[data-theme="harry"] .style-btn.style-comic.active { transform: scale(1.94) translateY(-1px); transform-origin: center bottom; filter: drop-shadow(0 0 10px rgba(201,168,76,1)) brightness(1.1); box-shadow: none !important; z-index: 3; }
+[data-theme="harry"] .style-btn.style-comic::before,
+[data-theme="harry"] .style-btn.style-gothic::before,
+[data-theme="harry"] .style-btn.style-console::before { display: none; }
 
 [data-theme="harry"] .style-btn-img {
   display: block;
@@ -340,27 +343,20 @@
   user-select: none;
 }
 
+/* ── COMIC ── */
+[data-theme="harry"] .style-btn.style-comic:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #ffe97a) brightness(1.15) saturate(1.2); z-index: 10; }
+[data-theme="harry"] .style-btn.style-comic.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #ffd700) brightness(1.12); box-shadow: none !important; z-index: 5; }
 
-/* ── GOTHIC — botella sin caja rectangular ── */
-[data-theme="harry"] .style-btn.style-gothic {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  width: 84px;
-  min-height: 112px;
-  padding: 0;
-  overflow: visible;
-  transform: scale(1.9);
-  transform-origin: center bottom;
-  transition: filter 0.2s ease, transform 0.2s ease;
-}
-[data-theme="harry"] .style-btn.style-gothic::before { display: none; }
-[data-theme="harry"] .style-btn.style-gothic:hover { transform: scale(1.98) translateY(-2px); transform-origin: center bottom; filter: drop-shadow(0 0 6px #b06aff) drop-shadow(0 0 18px rgba(140,50,255,.5)) brightness(1.15); transition: filter 0.2s ease, transform 0.2s ease; z-index: 3; position: relative; }
-[data-theme="harry"] .style-btn.style-gothic.active { transform: scale(1.94) translateY(-1px); transform-origin: center bottom; filter: drop-shadow(0 0 10px rgba(140,50,255,.9)) brightness(1.1); box-shadow: none !important; z-index: 3; position: relative; }
+/* ── GOTHIC ── */
+[data-theme="harry"] .style-btn.style-gothic:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #b06aff) brightness(1.15); z-index: 10; }
+[data-theme="harry"] .style-btn.style-gothic.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #9940ff) brightness(1.12); box-shadow: none !important; z-index: 5; }
+
+/* ── CONSOLE ── */
+[data-theme="harry"] .style-btn.style-console:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #00ff66) brightness(1.15); z-index: 10; }
+[data-theme="harry"] .style-btn.style-console.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #00ff66) brightness(1.12); box-shadow: none !important; z-index: 5; }
 
 /* ── Sin imagen todavía — colores de identificación ── */
 [data-theme="harry"] .style-btn.style-default  { background: linear-gradient(160deg, #c9b07a, #9a7a4a); color: #1a0e00; }
-[data-theme="harry"] .style-btn.style-console   { background: linear-gradient(160deg, #0c2e0c, #030d03); color: #00ff66; }
 [data-theme="harry"] .style-btn.style-neon      { background: linear-gradient(160deg, #09321d, #020d07); color: #00ff88; }
 [data-theme="harry"] .style-btn.style-neonblue  { background: linear-gradient(160deg, #091a33, #020a15); color: #00bbff; }
 [data-theme="harry"] .style-btn.style-fire      { background: linear-gradient(160deg, #cc2200, #440800); color: #ffcc88; }
