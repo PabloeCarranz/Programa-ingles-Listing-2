@@ -365,7 +365,7 @@
   align-items: center;
   gap: 8px;
   margin: 2px 0 0;
-  padding: 0;
+  padding: 0 0 0 14px;
 }
 [data-theme="harry"] .fc:has(.fc-collapsed-name) .fc-time {
   font-size: 0.66rem;
