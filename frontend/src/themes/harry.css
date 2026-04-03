@@ -319,15 +319,22 @@
 
 /* ═══════════ TARJETAS FRAGMENTO (.fc) ═══════════ */
 [data-theme="harry"] .fc {
-  background: url('./pergamino.png') no-repeat center / 100% 100%;
+  /* Pergamino arriba manteniendo proporciones; abajo color que combina */
+  background-color: #c8984e;
+  background-image: url('./pergamino.png');
+  background-size: 100% auto;
+  background-repeat: no-repeat;
+  background-position: top center;
   border: none;
   border-radius: 4px;
-  box-shadow: 0 4px 18px rgba(0,0,0,.65);
+  box-shadow: 0 4px 20px rgba(0,0,0,.7);
   position: relative;
   overflow: hidden;
+  /* Padding horizontal para que el texto caiga en la zona plana del rollo */
+  padding-left: 26px !important;
+  padding-right: 26px !important;
 }
 [data-theme="harry"] .fc::before { display: none; }
-/* Todo el contenido por encima */
 [data-theme="harry"] .fc > * { position: relative; z-index: 1; }
 [data-theme="harry"] .fc.fc-active {
   border-color: var(--hp-gold);
@@ -344,18 +351,19 @@
   font-family: monospace;
 }
 [data-theme="harry"] .fc-toggle {
-  background: linear-gradient(180deg, #3d2510 0%, #2d1a0a 100%);
+  background: rgba(26,14,5,.55);
   border-color: var(--hp-gold-dark);
   color: var(--hp-gold);
+  backdrop-filter: blur(2px);
 }
 [data-theme="harry"] .fc-toggle:hover {
-  background: linear-gradient(180deg, var(--hp-gold-dark) 0%, var(--hp-bronze) 100%);
+  background: rgba(139,96,20,.7);
   color: #fff;
 }
 [data-theme="harry"] .fc-play-mini {
   border-color: var(--hp-gold-dark);
   color: var(--hp-ink);
-  background: rgba(201,168,76,.3);
+  background: rgba(201,168,76,.45);
 }
 [data-theme="harry"] .fc-name {
   color: var(--hp-ink);
