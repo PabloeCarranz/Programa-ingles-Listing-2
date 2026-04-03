@@ -333,8 +333,10 @@
    aspect-ratio mantiene las proporciones reales del rollo */
 [data-theme="harry"] .fc:has(.fc-collapsed-name) {
   background: url('./pergamino.png') no-repeat center / 100% 100%;
-  aspect-ratio: 13 / 5;
-  box-shadow: 0 3px 14px rgba(0,0,0,.55);
+  aspect-ratio: 5 / 2;
+  background-color: transparent;
+  box-shadow: none;
+  border: none !important;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -342,12 +344,11 @@
   padding: 8px 0 6px;
   margin-bottom: 2px;
   cursor: pointer;
-  transition: transform 0.28s ease, box-shadow 0.28s ease, filter 0.28s ease;
+  transition: transform 0.28s ease, filter 0.28s ease;
 }
 [data-theme="harry"] .fc:has(.fc-collapsed-name):hover {
   transform: scaleX(1.018) scaleY(1.025);
-  box-shadow: 0 6px 24px rgba(0,0,0,.6), 0 0 20px rgba(201,168,76,.55);
-  filter: brightness(1.07) saturate(1.1);
+  filter: brightness(1.07) saturate(1.1) drop-shadow(0 0 10px rgba(201,168,76,.6));
 }
 
 /* Título centrado en la zona plana del rollo */
