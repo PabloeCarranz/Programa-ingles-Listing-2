@@ -799,7 +799,7 @@ export default function Player({ video, onBack }) {
             baseClass={`${builtinClass} sub-es`}
             customStyleObj={customStyleObj}
             fontSize={`${subSize}rem`}
-            defaultX={50} defaultY={83}
+            defaultX={50} defaultY={86}
             offset={subOffset} onDrag={setSubOffset}
             onEdit={t => editSubOverlay('es', t)}
             containerRef={videoWrap}
