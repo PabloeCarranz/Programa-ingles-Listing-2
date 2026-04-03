@@ -19,7 +19,7 @@ const BUILTIN_STYLES = [
 ]
 
 // ── Subtítulo arrastrable ──────────────────────────────────
-function DraggableSub({ text, baseClass, customStyleObj, fontSize, defaultX, defaultY, offset, onDrag, onEdit, containerRef }) {
+function DraggableSub({ text, baseClass, customStyleObj, fontSize, defaultX, defaultY, fixedOffsetPx = 0, offset, onDrag, onEdit, containerRef }) {
   const [editing, setEditing] = useState(false)
   const [editVal, setEditVal] = useState('')
   const dragging = useRef(false)
@@ -53,7 +53,8 @@ function DraggableSub({ text, baseClass, customStyleObj, fontSize, defaultX, def
   const y = defaultY + offset.y
 
   const inlineStyle = {
-    position: 'absolute', left: `${x}%`, top: `${y}%`,
+    position: 'absolute', left: `${x}%`,
+    top: fixedOffsetPx ? `calc(${y}% + ${fixedOffsetPx}px)` : `${y}%`,
     transform: 'translate(-50%,-50%)',
     fontSize,
     cursor:       editing ? 'text' : (text ? 'grab' : 'default'),
@@ -799,7 +800,7 @@ export default function Player({ video, onBack }) {
             baseClass={`${builtinClass} sub-es`}
             customStyleObj={customStyleObj}
             fontSize={`${subSize}rem`}
-            defaultX={50} defaultY={86}
+            defaultX={50} defaultY={74} fixedOffsetPx={36}
             offset={subOffset} onDrag={setSubOffset}
             onEdit={t => editSubOverlay('es', t)}
             containerRef={videoWrap}
