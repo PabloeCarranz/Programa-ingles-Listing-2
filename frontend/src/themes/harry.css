@@ -586,18 +586,8 @@
 
 /* (topbar sin velas — el espacio es necesario para los controles) */
 
-/* ── Vela + pluma en la cabecera del panel derecho ── */
+/* ── Pluma en la cabecera del panel derecho ── */
 [data-theme="harry"] .right-tabs { position: relative; }
-[data-theme="harry"] .right-tabs::before {
-  content: '🕯️';
-  position: absolute;
-  top: 50%; right: 32px;
-  font-size: 1.1rem;
-  animation: hp-flicker 3.1s ease-in-out infinite;
-  animation-delay: 1.3s;
-  pointer-events: none;
-  z-index: 1;
-}
 [data-theme="harry"] .right-tabs::after {
   content: '🪶';
   position: absolute;
@@ -607,32 +597,6 @@
   opacity: .75;
   pointer-events: none;
   z-index: 1;
-}
-
-/* ── Libros sutiles como marca de agua en el panel izquierdo ── */
-[data-theme="harry"] .player-left { position: relative; }
-[data-theme="harry"] .player-left::before {
-  content: '📚';
-  position: absolute;
-  bottom: 10px; left: 6px;
-  font-size: 1.5rem;
-  opacity: .1;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ── Vela sutil en esquina inferior del panel derecho ── */
-[data-theme="harry"] .player-right { position: relative; }
-[data-theme="harry"] .player-right::before {
-  content: '🕯️';
-  position: absolute;
-  bottom: 10px; right: 8px;
-  font-size: 1.3rem;
-  opacity: .15;
-  animation: hp-flicker-abs 4.2s ease-in-out infinite;
-  animation-delay: 0.5s;
-  pointer-events: none;
-  z-index: 0;
 }
 
 /* ── Borde de pergamino rasgado en tarjetas de fragmento ── */
