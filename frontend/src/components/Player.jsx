@@ -866,7 +866,7 @@ export default function Player({ video, onBack }) {
             const startTime = activeSub ? activeSub.start + subShift : t
             const endTime   = activeSub ? activeSub.end   + subShift : t + 5
             const newId = Date.now()
-            setStickers(prev => [...prev, { id: newId, url, x: 50, y: 30, size: 100, startTime, endTime }])
+            setStickers(prev => [...prev, { id: newId, url, x: 82, y: 74, size: 100, startTime, endTime }])
             setSelectedStickerId(newId)   // seleccionar inmediatamente
           }} />
           <div className="size-group">
