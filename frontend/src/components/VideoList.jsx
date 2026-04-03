@@ -1,13 +1,22 @@
 import { useEffect, useState, useRef } from 'react'
 import { ThemeDropdown } from './ThemeDropdown'
+import escobaImg from '../themes/escoba.png'
 
 const VIDEO_EXTS = ['.mp4', '.mkv', '.avi', '.mov', '.webm', '.m4v']
 
 export default function VideoList({ onSelect, theme, onThemeChange }) {
-  const [videos,   setVideos]   = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [dragging, setDragging] = useState(false)
-  const [uploads,  setUploads]  = useState([])
+  const [videos,     setVideos]     = useState([])
+  const [loading,    setLoading]    = useState(true)
+  const [dragging,   setDragging]   = useState(false)
+  const [uploads,    setUploads]    = useState([])
+  const [escobaAnim, setEscobaAnim] = useState('idle')
+
+  function handleEscobaClick() {
+    if (escobaAnim !== 'idle') return
+    setEscobaAnim('flyaway')
+    setTimeout(() => setEscobaAnim('return'), 900)
+    setTimeout(() => setEscobaAnim('idle'),  1700)
+  }
   const fileInput = useRef(null)
 
   function loadVideos() {
@@ -53,6 +62,14 @@ export default function VideoList({ onSelect, theme, onThemeChange }) {
   return (
     <div className="vlist-wrap">
       <div className="vlist-header">
+        {theme === 'harry' && (
+          <img
+            src={escobaImg}
+            className={`escoba-deco escoba-${escobaAnim}`}
+            onClick={handleEscobaClick}
+            alt=""
+          />
+        )}
         <h1>🎧 Listening</h1>
         <p>Seleccioná un video para practicar</p>
         <div className="vlist-theme-row">

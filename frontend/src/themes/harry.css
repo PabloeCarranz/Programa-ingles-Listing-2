@@ -34,21 +34,45 @@
 
 /* ═══════════ VIDEO LIST ═══════════ */
 
-/* Escoba volando sobre el header */
+/* Escoba interactiva */
 [data-theme="harry"] .vlist-header {
   position: relative;
   padding-top: 16px;
   padding-bottom: 8px;
 }
-[data-theme="harry"] .vlist-header::before {
-  content: '';
+
+.escoba-deco {
   position: absolute;
   top: -28px; right: -30px;
   width: 220px; height: 110px;
-  background: url('./escoba.png') no-repeat right center / contain;
-  pointer-events: none;
-  opacity: 0.88;
-  z-index: 0;
+  object-fit: contain;
+  opacity: 0.9;
+  cursor: pointer;
+  z-index: 2;
+  transition: filter 0.25s ease;
+}
+.escoba-deco:hover {
+  filter: drop-shadow(0 0 8px #c9a84c) drop-shadow(0 0 18px rgba(201,168,76,.7)) brightness(1.12);
+}
+
+/* Vuela hacia la derecha y desaparece */
+.escoba-flyaway {
+  animation: escoba-fly-away 0.85s cubic-bezier(.4,0,.2,1) forwards;
+}
+/* Vuelve desde la izquierda */
+.escoba-return {
+  animation: escoba-fly-back 0.75s cubic-bezier(.2,0,.4,1) forwards;
+}
+
+@keyframes escoba-fly-away {
+  0%   { transform: translateX(0)      rotate(0deg);   opacity: 0.9; }
+  60%  { transform: translateX(60vw)   rotate(12deg);  opacity: 0.7; }
+  100% { transform: translateX(110vw)  rotate(20deg);  opacity: 0;   }
+}
+@keyframes escoba-fly-back {
+  0%   { transform: translateX(-110vw) rotate(-20deg); opacity: 0;   }
+  40%  { transform: translateX(-20vw)  rotate(-8deg);  opacity: 0.7; }
+  100% { transform: translateX(0)      rotate(0deg);   opacity: 0.9; }
 }
 /* Sombrero+libros bajo el subtítulo */
 [data-theme="harry"] .vlist-header::after {
