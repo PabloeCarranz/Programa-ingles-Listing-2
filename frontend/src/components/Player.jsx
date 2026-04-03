@@ -883,8 +883,8 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
 
         {/* Subtítulos */}
         <div className="sub-controls-row">
-          <button className={`sub-toggle ${showEn ? 'active' : ''}`} onClick={() => setShowEn(v => !v)}>EN {showEn ? 'ON' : 'OFF'}</button>
-          <button className={`sub-toggle ${showEs ? 'active' : ''}`} onClick={() => setShowEs(v => !v)}>ES {showEs ? 'ON' : 'OFF'}</button>
+          <button className={`sub-toggle ${showEn ? 'active' : ''}`} onClick={() => setShowEn(v => !v)}>🇬🇧 {showEn ? 'ON' : 'OFF'}</button>
+          <button className={`sub-toggle ${showEs ? 'active' : ''}`} onClick={() => setShowEs(v => !v)}>🇪🇸 {showEs ? 'ON' : 'OFF'}</button>
           <div className="style-group">
             {BUILTIN_STYLES.map(st => (
               <button key={st.id} className={`style-btn style-${st.id} ${subStyle === st.id ? 'active' : ''}`} onClick={() => setSubStyle(st.id)}>

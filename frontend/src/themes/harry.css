@@ -584,24 +584,7 @@
   }
 }
 
-/* ── Velas flanqueando la topbar ── */
-[data-theme="harry"] .player-topbar {
-  position: relative;
-  padding-left:  36px;
-  padding-right: 36px;
-}
-[data-theme="harry"] .player-topbar::before,
-[data-theme="harry"] .player-topbar::after {
-  content: '🕯️';
-  position: absolute;
-  top: 50%;
-  font-size: 1.3rem;
-  animation: hp-flicker 2.6s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 1;
-}
-[data-theme="harry"] .player-topbar::before { left: 6px;  animation-delay: 0s;   }
-[data-theme="harry"] .player-topbar::after  { right: 6px; animation-delay: 0.85s; }
+/* (topbar sin velas — el espacio es necesario para los controles) */
 
 /* ── Vela + pluma en la cabecera del panel derecho ── */
 [data-theme="harry"] .right-tabs { position: relative; }
