@@ -361,6 +361,7 @@ export default function Player({ video, onBack }) {
 
   const [editSubKey,   setEditSubKey]   = useState(null)
   const [editSubVal,   setEditSubVal]   = useState('')
+  const [collapsed,    setCollapsed]    = useState(new Set())
 
   // ── Cargar datos ──
   useEffect(() => {
@@ -892,11 +893,36 @@ export default function Player({ video, onBack }) {
               const segRepeat   = seg.repeat ?? 1
               const repConfig   = seg.repConfig ?? [{ speed: 1, en: true, es: false }]
               const segSubStyle = seg.subStyle ?? 'default'
+              const isCollapsed = collapsed.has(idx) && !isActive
+              function toggleCollapse() {
+                setCollapsed(prev => {
+                  const next = new Set(prev)
+                  next.has(idx) ? next.delete(idx) : next.add(idx)
+                  return next
+                })
+              }
               return (
               <div key={seg.id ?? idx} className={`fc ${isActive ? 'fc-active' : ''}`}>
 
-                {/* Tiempo */}
-                <div className="fc-time">{fmt(seg.start)} → {fmt(seg.end)}</div>
+                {/* Header: tiempo + nombre (si colapsado) + toggle */}
+                <div className="fc-header">
+                  <div className="fc-time">{fmt(seg.start)} → {fmt(seg.end)}</div>
+                  {isCollapsed && (
+                    <span className="fc-collapsed-name" title={seg.phrase}>{seg.phrase}</span>
+                  )}
+                  {isCollapsed && !isActive && (
+                    <button className="fc-play-mini" onClick={() => playSegment(idx)} title="Reproducir">▶</button>
+                  )}
+                  {isCollapsed && isActive && (
+                    <button className="fc-play-mini fc-stop-mini" onClick={stopLoop} title="Detener">■</button>
+                  )}
+                  <button className="fc-toggle" onClick={toggleCollapse} title={isCollapsed ? 'Expandir' : 'Colapsar'}>
+                    {isCollapsed ? '▸' : '▾'}
+                  </button>
+                </div>
+
+                {/* Contenido expandido */}
+                {!isCollapsed && <>
 
                 {/* Nombre / dots cuando reproduce */}
                 {isActive ? (
@@ -992,6 +1018,8 @@ export default function Player({ video, onBack }) {
                   </button>
                   <button className="fc-del-btn" onClick={() => deleteSegment(idx)}>🗑</button>
                 </div>
+
+                </>} {/* fin !isCollapsed */}
 
               </div>
               )
