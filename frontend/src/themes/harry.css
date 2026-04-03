@@ -264,18 +264,94 @@
 }
 [data-theme="harry"] .size-btn:hover { border-color: var(--hp-gold); color: var(--hp-gold-light); }
 
-/* ── Style pills de subtítulo ── */
+/* ── Style buttons de subtítulo — forma de botella de poción ── */
+[data-theme="harry"] .style-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-end;
+}
+
 [data-theme="harry"] .style-btn {
-  background: linear-gradient(180deg, #3d2510 0%, #2d1a0a 100%);
-  border: 1px solid var(--hp-gold-dark);
-  color: var(--hp-parchment-dk);
-  border-radius: 4px;
+  position: relative; /* necesario para label absoluto en comic */
+  width: 56px;
+  min-height: 78px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(139,96,20,.4) !important;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  font-family: var(--hp-serif);
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 2px 3px 5px;
+  overflow: hidden;
+  transition: transform 0.18s, box-shadow 0.18s, filter 0.18s;
+  cursor: pointer;
+}
+[data-theme="harry"] .style-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
 }
 [data-theme="harry"] .style-btn.active {
-  background: linear-gradient(180deg, var(--hp-gold) 0%, var(--hp-gold-dark) 100%);
-  color: var(--hp-ink);
-  border-color: var(--hp-gold-light);
+  border-color: var(--hp-gold) !important;
+  box-shadow: 0 0 10px var(--hp-glow), 0 3px 8px rgba(0,0,0,.4);
+  transform: translateY(-1px);
 }
+
+/* Imagen de poción: pseudo-elemento sobre el fondo de color */
+[data-theme="harry"] .style-btn::before {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px; right: 3px; bottom: 20px;
+  background: no-repeat center / contain;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 0;
+}
+[data-theme="harry"] .style-btn > * { position: relative; z-index: 1; }
+
+/* ── COMIC — botella sin caja rectangular ── */
+[data-theme="harry"] .style-btn.style-comic {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: 84px;
+  min-height: 112px;
+  padding: 0;
+  overflow: visible;
+  transform: scale(1.9);
+  transform-origin: center bottom;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+[data-theme="harry"] .style-btn.style-comic::before { display: none; }
+[data-theme="harry"] .style-btn.style-comic:hover { transform: scale(1.98) translateY(-2px); transform-origin: center bottom; filter: drop-shadow(0 0 6px #ffe97a) drop-shadow(0 0 18px rgba(255,210,50,.6)) brightness(1.15) saturate(1.2); transition: filter 0.2s ease, transform 0.2s ease; }
+[data-theme="harry"] .style-btn.style-comic.active { transform: scale(1.94) translateY(-1px); transform-origin: center bottom; filter: drop-shadow(0 0 10px rgba(201,168,76,1)) brightness(1.1); box-shadow: none !important; }
+
+[data-theme="harry"] .style-btn-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+
+/* ── Sin imagen todavía — colores de identificación ── */
+[data-theme="harry"] .style-btn.style-default  { background: linear-gradient(160deg, #c9b07a, #9a7a4a); color: #1a0e00; }
+[data-theme="harry"] .style-btn.style-gothic    { background: linear-gradient(160deg, #5a1e7a, #180030); color: #ddb8ff; }
+[data-theme="harry"] .style-btn.style-console   { background: linear-gradient(160deg, #0c2e0c, #030d03); color: #00ff66; }
+[data-theme="harry"] .style-btn.style-neon      { background: linear-gradient(160deg, #09321d, #020d07); color: #00ff88; }
+[data-theme="harry"] .style-btn.style-neonblue  { background: linear-gradient(160deg, #091a33, #020a15); color: #00bbff; }
+[data-theme="harry"] .style-btn.style-fire      { background: linear-gradient(160deg, #cc2200, #440800); color: #ffcc88; }
+[data-theme="harry"] .style-btn.style-ice       { background: linear-gradient(160deg, #6ab8dd, #0e5588); color: #e8f8ff; }
+[data-theme="harry"] .style-btn.style-gold      { background: linear-gradient(160deg, #c9a84c, #4d3308); color: #fff4d4; }
+[data-theme="harry"] .style-btn.style-bubblegum { background: linear-gradient(160deg, #ee5599, #881133); color: #ffe8f4; }
+[data-theme="harry"] .style-btn.style-cinema    { background: linear-gradient(160deg, #2a2a2a, #050505); color: #cccccc; }
+[data-theme="harry"] .style-btn.style-shadow    { background: linear-gradient(160deg, #2e3e50, #0e1a28); color: #a0b8cc; }
+[data-theme="harry"] .style-btn.style-outline   { background: rgba(201,168,76,.08); border: 1.5px dashed var(--hp-gold-dark) !important; color: var(--hp-parchment-dk); }
 
 /* ── Mark panel ── */
 [data-theme="harry"] .mark-panel {
@@ -784,80 +860,3 @@
 }
 
 
-/* ═══════════ POCIONES — pills de estilo de subtítulo ═══════════ */
-
-/* Contenedor: wrap para acomodar botellas */
-[data-theme="harry"] .fc-style-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: flex-start;
-  padding: 4px 0 2px;
-}
-
-/* ── Base: todas las pills toman forma de botella ── */
-[data-theme="harry"] .fc-style-pill {
-  position: relative;
-  width: 56px;
-  min-height: 78px;
-  border-radius: 6px;
-  border: 1.5px solid rgba(139,96,20,.4) !important;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  font-family: var(--hp-serif);
-  font-size: 0.58rem;
-  font-weight: 700;
-  padding: 2px 3px 5px;
-  overflow: hidden;
-  transition: transform 0.18s, box-shadow 0.18s, filter 0.18s;
-  cursor: pointer;
-}
-[data-theme="harry"] .fc-style-pill:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-}
-[data-theme="harry"] .fc-style-pill.fc-style-on {
-  border-color: var(--hp-gold) !important;
-  box-shadow: 0 0 10px var(--hp-glow), 0 3px 8px rgba(0,0,0,.4);
-  transform: translateY(-1px);
-}
-
-/* Imagen de poción: pseudo-elemento sobre el fondo de color */
-[data-theme="harry"] .fc-style-pill::before {
-  content: '';
-  position: absolute;
-  top: 3px; left: 3px; right: 3px; bottom: 20px;
-  background: no-repeat center / contain;
-  mix-blend-mode: multiply;
-  pointer-events: none;
-  z-index: 0;
-}
-[data-theme="harry"] .fc-style-pill > * { position: relative; z-index: 1; }
-
-/* ── COMIC — pocionComic.png ── */
-[data-theme="harry"] .fc-style-pill.style-comic {
-  background: linear-gradient(160deg, #f5e8b0 0%, #e8d070 50%, #d4b840 100%);
-  color: #3a2800;
-}
-[data-theme="harry"] .fc-style-pill.style-comic::before {
-  background-image: url('./pocionComic.png');
-}
-[data-theme="harry"] .fc-style-pill.style-comic.fc-style-on {
-  box-shadow: 0 0 12px rgba(220,180,0,.7), 0 3px 8px rgba(0,0,0,.4);
-}
-
-/* ── Sin imagen todavía — colores de identificación ── */
-[data-theme="harry"] .fc-style-pill.style-default  { background: linear-gradient(160deg, #c9b07a, #9a7a4a); color: #1a0e00; }
-[data-theme="harry"] .fc-style-pill.style-gothic    { background: linear-gradient(160deg, #5a1e7a, #180030); color: #ddb8ff; }
-[data-theme="harry"] .fc-style-pill.style-console   { background: linear-gradient(160deg, #0c2e0c, #030d03); color: #00ff66; }
-[data-theme="harry"] .fc-style-pill.style-neon      { background: linear-gradient(160deg, #09321d, #020d07); color: #00ff88; }
-[data-theme="harry"] .fc-style-pill.style-neonblue  { background: linear-gradient(160deg, #091a33, #020a15); color: #00bbff; }
-[data-theme="harry"] .fc-style-pill.style-fire      { background: linear-gradient(160deg, #cc2200, #440800); color: #ffcc88; }
-[data-theme="harry"] .fc-style-pill.style-ice       { background: linear-gradient(160deg, #6ab8dd, #0e5588); color: #e8f8ff; }
-[data-theme="harry"] .fc-style-pill.style-gold      { background: linear-gradient(160deg, #c9a84c, #4d3308); color: #fff4d4; }
-[data-theme="harry"] .fc-style-pill.style-bubblegum { background: linear-gradient(160deg, #ee5599, #881133); color: #ffe8f4; }
-[data-theme="harry"] .fc-style-pill.style-cinema    { background: linear-gradient(160deg, #2a2a2a, #050505); color: #cccccc; }
-[data-theme="harry"] .fc-style-pill.style-shadow    { background: linear-gradient(160deg, #2e3e50, #0e1a28); color: #a0b8cc; }
-[data-theme="harry"] .fc-style-pill.style-outline   { background: rgba(201,168,76,.08); border: 1.5px dashed var(--hp-gold-dark) !important; color: var(--hp-parchment-dk); }

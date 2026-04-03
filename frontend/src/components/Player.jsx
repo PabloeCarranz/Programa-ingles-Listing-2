@@ -2,11 +2,12 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { StickerSelector } from './StickerSelector'
 import { ThemeDropdown } from './ThemeDropdown'
 import escobaImg from '../themes/escoba.png'
+import botonComic2Img from '../themes/botonComic2.png'
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
 const BUILTIN_STYLES = [
   { id: 'default',   label: 'Default'   },
-  { id: 'comic',     label: 'Comic'     },
+  { id: 'comic',     label: 'Comic',    img: botonComic2Img },
   { id: 'gothic',    label: 'Gothic'    },
   { id: 'console',   label: 'Console'   },
   { id: 'neon',      label: 'Neon'      },
@@ -905,7 +906,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
           <div className="style-group">
             {BUILTIN_STYLES.map(st => (
               <button key={st.id} className={`style-btn style-${st.id} ${subStyle === st.id ? 'active' : ''}`} onClick={() => setSubStyle(st.id)}>
-                {st.label}
+                {(st.img && theme === 'harry') ? <img src={st.img} className="style-btn-img" alt={st.label} /> : st.label}
               </button>
             ))}
           </div>
