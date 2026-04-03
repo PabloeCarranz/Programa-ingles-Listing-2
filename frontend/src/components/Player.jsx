@@ -3,13 +3,14 @@ import { StickerSelector } from './StickerSelector'
 import { ThemeDropdown } from './ThemeDropdown'
 import escobaImg from '../themes/escoba.png'
 import botonComic2Img from '../themes/botonComic2.png'
+import gothicImg from '../themes/gothic.png'
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
 const BUILTIN_STYLES = [
   { id: 'default',   label: 'Default'   },
   { id: 'comic',     label: 'Comic',    img: botonComic2Img },
-  { id: 'gothic',    label: 'Gothic'    },
-  { id: 'console',   label: 'Console'   },
+  { id: 'gothic',    label: 'Gothic',   img: gothicImg },
+  { id: 'console',   label: 'Console',  img: ConsoleImg },
   { id: 'neon',      label: 'Neon'      },
   { id: 'neonblue',  label: 'Neon Blue' },
   { id: 'fire',      label: 'Fire'      },
