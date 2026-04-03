@@ -318,52 +318,130 @@
 }
 
 /* ═══════════ TARJETAS FRAGMENTO (.fc) ═══════════ */
+
+/* ── Base compartida ── */
 [data-theme="harry"] .fc {
-  /* Pergamino arriba manteniendo proporciones; abajo color que combina */
-  background-color: #c8984e;
-  background-image: url('./pergamino.png');
-  background-size: 100% auto;
-  background-repeat: no-repeat;
-  background-position: top center;
   border: none;
   border-radius: 4px;
-  box-shadow: 0 4px 20px rgba(0,0,0,.7);
   position: relative;
   overflow: hidden;
-  /* Padding horizontal para que el texto caiga en la zona plana del rollo */
-  padding-left: 26px !important;
-  padding-right: 26px !important;
 }
 [data-theme="harry"] .fc::before { display: none; }
 [data-theme="harry"] .fc > * { position: relative; z-index: 1; }
-[data-theme="harry"] .fc.fc-active {
-  border-color: var(--hp-gold);
-  box-shadow: 0 0 16px var(--hp-glow), 0 2px 10px rgba(0,0,0,.5);
+
+/* ══ COLAPSADO: el pergamino ES la tarjeta ══
+   aspect-ratio mantiene las proporciones reales del rollo */
+[data-theme="harry"] .fc:has(.fc-collapsed-name) {
+  background: url('./pergamino.png') no-repeat center / 100% 100%;
+  aspect-ratio: 13 / 5;
+  box-shadow: 0 3px 14px rgba(0,0,0,.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0 6px;
+  margin-bottom: 2px;
 }
 
-[data-theme="harry"] .fc-collapsed-name {
+/* Título centrado en la zona plana del rollo */
+[data-theme="harry"] .fc:has(.fc-collapsed-name) .fc-collapsed-name {
   font-family: var(--hp-serif);
+  font-size: 0.86rem;
+  font-weight: 700;
   color: var(--hp-ink);
-  font-weight: 600;
+  text-align: center;
+  padding: 0 18%;       /* 18% = bordea los extremos enrollados */
+  line-height: 1.3;
+  text-shadow: 0 1px 0 rgba(255,248,220,.5);
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
 }
+
+/* Tiempo + botones centrados, compactos */
+[data-theme="harry"] .fc:has(.fc-collapsed-name) .fc-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 0;
+  padding: 0;
+}
+[data-theme="harry"] .fc:has(.fc-collapsed-name) .fc-time {
+  font-size: 0.66rem;
+  color: rgba(30,14,0,.55);
+  font-family: monospace;
+}
+[data-theme="harry"] .fc:has(.fc-collapsed-name) .fc-play-mini {
+  background: rgba(160,98,42,.35);
+  border: 1px solid rgba(139,96,20,.6);
+  color: var(--hp-ink);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+}
+[data-theme="harry"] .fc:has(.fc-collapsed-name) .fc-toggle {
+  background: rgba(26,14,5,.4);
+  border: 1px solid rgba(139,96,20,.5);
+  color: #8b5e1a;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+}
+
+/* ══ EXPANDIDO: cabecera de pergamino + cuerpo parchment ══ */
+[data-theme="harry"] .fc:not(:has(.fc-collapsed-name)) {
+  background: linear-gradient(180deg, #c8a45a 0%, #b88c40 30%, #c4a060 100%);
+  border: 1.5px solid var(--hp-gold-dark);
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.12);
+}
+[data-theme="harry"] .fc.fc-active {
+  border-color: var(--hp-gold) !important;
+  box-shadow: 0 0 16px var(--hp-glow), 0 2px 10px rgba(0,0,0,.5) !important;
+}
+
+/* Nombre del bloque expandido: mini pergamino como cabecera */
+[data-theme="harry"] .fc:not(:has(.fc-collapsed-name)) .fc-name {
+  background: url('./pergamino.png') no-repeat center / 100% 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px 18%;
+  font-family: var(--hp-serif);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--hp-ink);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  margin: -1px -1px 4px;   /* cubre el borde superior de la tarjeta */
+  cursor: pointer;
+}
+[data-theme="harry"] .fc:not(:has(.fc-collapsed-name)) .fc-name:hover {
+  filter: brightness(1.05);
+  color: var(--hp-ink);
+}
+
+/* Header con tiempo + toggle en expandido */
 [data-theme="harry"] .fc-time {
   color: var(--hp-ink-light);
   font-family: monospace;
 }
 [data-theme="harry"] .fc-toggle {
-  background: rgba(26,14,5,.55);
+  background: rgba(26,14,5,.45);
   border-color: var(--hp-gold-dark);
   color: var(--hp-gold);
-  backdrop-filter: blur(2px);
 }
 [data-theme="harry"] .fc-toggle:hover {
-  background: rgba(139,96,20,.7);
+  background: rgba(139,96,20,.65);
   color: #fff;
 }
 [data-theme="harry"] .fc-play-mini {
   border-color: var(--hp-gold-dark);
   color: var(--hp-ink);
-  background: rgba(201,168,76,.45);
+  background: rgba(201,168,76,.35);
 }
 [data-theme="harry"] .fc-name {
   color: var(--hp-ink);
