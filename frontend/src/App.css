@@ -37,8 +37,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; colo
 .vlist-theme-row { margin-top: 12px; display: flex; justify-content: center; }
 
 /* ── VIDEO LIST ── */
-.vlist-wrap  { max-width: 700px; margin: 0 auto; padding: 32px 16px; }
-.vlist-header { text-align: center; margin-bottom: 24px; }
+.vlist-wrap  { max-width: 700px; margin: 0 auto; padding: 32px 16px; overflow: visible; }
+.vlist-header { text-align: center; margin-bottom: 60px; overflow: visible; }
 .vlist-header h1 { font-size: 2.2rem; color: #63b3ed; }
 .vlist-header p  { color: #718096; margin-top: 6px; }
 .vlist-loading   { text-align: center; color: #718096; padding: 20px; }
