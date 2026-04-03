@@ -210,10 +210,13 @@ const FLAG_COLORS = [
 ]
 
 // ── Barra de progreso con banderas ───────────────────────
+const FLAG_DRAG_THRESHOLD = 6 // px mínimos para considerar arrastre
+
 function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag, onMoveFlag }) {
   const wrapRef     = useRef(null)
   const dragging    = useRef(false)
-  const flagDrag    = useRef(null) // { idx, type:'start'|'end' }
+  const flagPending = useRef(null) // { idx, type, startX } — esperando umbral
+  const flagDrag    = useRef(null) // { idx, type } — arrastre confirmado
   const [hover, setHover] = useState(null)
 
   function pct(t) { return duration ? Math.min(100, (t / duration) * 100) : 0 }
@@ -227,7 +230,7 @@ function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag, onMoveFla
   return (
     <div className="seekbar" ref={wrapRef}
       onPointerDown={e => {
-        if (flagDrag.current) return   // bandera tomó el evento
+        if (flagPending.current || flagDrag.current) return
         e.preventDefault()
         dragging.current = true
         e.currentTarget.setPointerCapture(e.pointerId)
@@ -236,8 +239,16 @@ function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag, onMoveFla
       onPointerMove={e => {
         const t  = timeAt(e)
         const rx = e.clientX - wrapRef.current.getBoundingClientRect().left
+
+        // Verificar si la bandera pendiente superó el umbral de arrastre
+        if (flagPending.current && !flagDrag.current) {
+          const moved = Math.abs(e.clientX - flagPending.current.startX)
+          if (moved >= FLAG_DRAG_THRESHOLD) {
+            flagDrag.current = { idx: flagPending.current.idx, type: flagPending.current.type }
+          }
+        }
+
         if (flagDrag.current) {
-          // arrastrar bandera: mover tiempo del fragmento
           onMoveFlag(flagDrag.current.idx, flagDrag.current.type, t)
           setHover({ x: rx, label: fmt(t) })
           return
@@ -251,9 +262,15 @@ function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag, onMoveFla
       onPointerUp={e => {
         dragging.current = false
         if (flagDrag.current) {
-          // al soltar la bandera persistimos el cambio
           onMoveFlag(flagDrag.current.idx, flagDrag.current.type, timeAt(e), true)
           flagDrag.current = null
+          flagPending.current = null
+        } else if (flagPending.current) {
+          // fue un clic simple sobre la bandera → seek normal
+          const { idx, type } = flagPending.current
+          if (type === 'start') onSeek(segments[idx].start)
+          else onEndFlag(segments[idx].end)
+          flagPending.current = null
         }
       }}
       onPointerLeave={() => { setHover(null) }}
@@ -276,10 +293,9 @@ function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag, onMoveFla
               onPointerDown={e => {
                 e.stopPropagation()
                 e.preventDefault()
-                flagDrag.current = { idx, type: 'start' }
+                flagPending.current = { idx, type: 'start', startX: e.clientX }
                 wrapRef.current.setPointerCapture(e.pointerId)
               }}
-              onPointerUp={e => { e.stopPropagation(); if (!flagDrag.current) onSeek(seg.start) }}
               title={`⠿ Arrastrar inicio · ${seg.phrase}`}
             >
               <div className="sb-flag-label sb-flag-start-label" style={{ background: color }}>{idx + 1}▶</div>
@@ -291,10 +307,9 @@ function SeekBar({ duration, currentTime, segments, onSeek, onEndFlag, onMoveFla
               onPointerDown={e => {
                 e.stopPropagation()
                 e.preventDefault()
-                flagDrag.current = { idx, type: 'end' }
+                flagPending.current = { idx, type: 'end', startX: e.clientX }
                 wrapRef.current.setPointerCapture(e.pointerId)
               }}
-              onPointerUp={e => { e.stopPropagation(); if (!flagDrag.current) onEndFlag(seg.end) }}
               title={`⠿ Arrastrar fin · ${seg.phrase}`}
             >
               <div className="sb-flag-pole sb-flag-end-pole" />
