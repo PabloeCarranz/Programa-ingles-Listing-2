@@ -437,6 +437,31 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   const [collapsed,    setCollapsed]    = useState(new Set())
   const [videoSize,    setVideoSize]    = useState(1)   // 0=chico 1=medio 2=grande
   const [escobaAnim,   setEscobaAnim]   = useState('idle')
+  const [videoMaxH,    setVideoMaxH]    = useState(42)  // vh
+  const [rightWidth,   setRightWidth]   = useState(340) // px
+  const resizeDrag = useRef(null)
+
+  useEffect(() => {
+    const onMove = e => {
+      const d = resizeDrag.current
+      if (!d) return
+      if (d.type === 'v') {
+        const dy = e.clientY - d.startY
+        const vhPx = window.innerHeight / 100
+        setVideoMaxH(h => Math.max(15, Math.min(85, d.startVal + dy / vhPx)))
+      } else {
+        const dx = d.startX - e.clientX
+        setRightWidth(w => Math.max(220, Math.min(660, d.startVal + dx)))
+      }
+    }
+    const onUp = () => { resizeDrag.current = null; document.body.style.cursor = '' }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+  }, [])
 
   function handleEscobaClick() {
     if (escobaAnim !== 'idle') return
@@ -812,7 +837,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
         </div>
 
         <div className="video-wrap" ref={videoWrap}
-          style={{ '--video-max-h': VIDEO_SIZES[videoSize] }}
+          style={{ '--video-max-h': videoMaxH + 'vh' }}
           onClick={e => {
             setSelectedStickerId(null)
             // solo clic directo sobre el wrap (no sobre stickers ni subs)
@@ -868,6 +893,13 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
             onEdit={t => editSubOverlay('es', t)}
             containerRef={videoWrap}
           />
+          <div className="resize-handle-v"
+            onMouseDown={e => {
+              e.preventDefault()
+              document.body.style.cursor = 'ns-resize'
+              resizeDrag.current = { type: 'v', startY: e.clientY, startVal: videoMaxH }
+            }}
+          ><span className="resize-dots" /></div>
         </div>
 
         {/* ── Controles de video + barra con banderas ── */}
@@ -1001,8 +1033,17 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
         </div>{/* end player-left-scroll */}
       </div>
 
+      {/* ── HANDLE HORIZONTAL ── */}
+      <div className="resize-handle-h"
+        onMouseDown={e => {
+          e.preventDefault()
+          document.body.style.cursor = 'ew-resize'
+          resizeDrag.current = { type: 'h', startX: e.clientX, startVal: rightWidth }
+        }}
+      ><span className="resize-dots" /></div>
+
       {/* ── DERECHA ── */}
-      <div className="player-right">
+      <div className="player-right" style={{ width: rightWidth, minWidth: rightWidth, maxWidth: rightWidth }}>
         <div className="right-tabs">
           <button className={`rtab ${rightTab === 'fragments' ? 'rtab-active' : ''}`} onClick={() => setRightTab('fragments')}>
             ✂️ {segments.length > 0 ? `Fragmentos (${segments.length})` : 'Fragmentos'}
