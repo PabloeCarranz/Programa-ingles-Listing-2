@@ -267,10 +267,15 @@
 /* ── Style buttons de subtítulo — forma de botella de poción ── */
 [data-theme="harry"] .style-group {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   align-items: flex-end;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 4px;
+  scrollbar-width: none;
 }
+[data-theme="harry"] .style-group::-webkit-scrollbar { display: none; }
 
 [data-theme="harry"] .style-btn {
   position: relative; /* necesario para label absoluto en comic */
@@ -315,7 +320,17 @@
 /* ── Base compartida: botellas sin caja ── */
 [data-theme="harry"] .style-btn.style-comic,
 [data-theme="harry"] .style-btn.style-gothic,
-[data-theme="harry"] .style-btn.style-console {
+[data-theme="harry"] .style-btn.style-console,
+[data-theme="harry"] .style-btn.style-default,
+[data-theme="harry"] .style-btn.style-neon,
+[data-theme="harry"] .style-btn.style-neonblue,
+[data-theme="harry"] .style-btn.style-fire,
+[data-theme="harry"] .style-btn.style-ice,
+[data-theme="harry"] .style-btn.style-gold,
+[data-theme="harry"] .style-btn.style-bubblegum,
+[data-theme="harry"] .style-btn.style-cinema,
+[data-theme="harry"] .style-btn.style-shadow,
+[data-theme="harry"] .style-btn.style-outline {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -332,7 +347,17 @@
 }
 [data-theme="harry"] .style-btn.style-comic::before,
 [data-theme="harry"] .style-btn.style-gothic::before,
-[data-theme="harry"] .style-btn.style-console::before { display: none; }
+[data-theme="harry"] .style-btn.style-console::before,
+[data-theme="harry"] .style-btn.style-default::before,
+[data-theme="harry"] .style-btn.style-neon::before,
+[data-theme="harry"] .style-btn.style-neonblue::before,
+[data-theme="harry"] .style-btn.style-fire::before,
+[data-theme="harry"] .style-btn.style-ice::before,
+[data-theme="harry"] .style-btn.style-gold::before,
+[data-theme="harry"] .style-btn.style-bubblegum::before,
+[data-theme="harry"] .style-btn.style-cinema::before,
+[data-theme="harry"] .style-btn.style-shadow::before,
+[data-theme="harry"] .style-btn.style-outline::before { display: none; }
 
 [data-theme="harry"] .style-btn-img {
   display: block;
@@ -355,17 +380,45 @@
 [data-theme="harry"] .style-btn.style-console:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #00ff66) brightness(1.15); z-index: 10; }
 [data-theme="harry"] .style-btn.style-console.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #00ff66) brightness(1.12); box-shadow: none !important; z-index: 5; }
 
-/* ── Sin imagen todavía — colores de identificación ── */
-[data-theme="harry"] .style-btn.style-default  { background: linear-gradient(160deg, #c9b07a, #9a7a4a); color: #1a0e00; }
-[data-theme="harry"] .style-btn.style-neon      { background: linear-gradient(160deg, #09321d, #020d07); color: #00ff88; }
-[data-theme="harry"] .style-btn.style-neonblue  { background: linear-gradient(160deg, #091a33, #020a15); color: #00bbff; }
-[data-theme="harry"] .style-btn.style-fire      { background: linear-gradient(160deg, #cc2200, #440800); color: #ffcc88; }
-[data-theme="harry"] .style-btn.style-ice       { background: linear-gradient(160deg, #6ab8dd, #0e5588); color: #e8f8ff; }
-[data-theme="harry"] .style-btn.style-gold      { background: linear-gradient(160deg, #c9a84c, #4d3308); color: #fff4d4; }
-[data-theme="harry"] .style-btn.style-bubblegum { background: linear-gradient(160deg, #ee5599, #881133); color: #ffe8f4; }
-[data-theme="harry"] .style-btn.style-cinema    { background: linear-gradient(160deg, #2a2a2a, #050505); color: #cccccc; }
-[data-theme="harry"] .style-btn.style-shadow    { background: linear-gradient(160deg, #2e3e50, #0e1a28); color: #a0b8cc; }
-[data-theme="harry"] .style-btn.style-outline   { background: rgba(201,168,76,.08); border: 1.5px dashed var(--hp-gold-dark) !important; color: var(--hp-parchment-dk); }
+/* ── DEFAULT ── */
+[data-theme="harry"] .style-btn.style-default:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #d4b86a) brightness(1.15); z-index: 10; }
+[data-theme="harry"] .style-btn.style-default.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #c9a84c) brightness(1.12); box-shadow: none !important; z-index: 5; }
+
+/* ── NEON ── */
+[data-theme="harry"] .style-btn.style-neon:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #ff00cc) brightness(1.15); z-index: 10; }
+[data-theme="harry"] .style-btn.style-neon.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #ff00cc) brightness(1.12); box-shadow: none !important; z-index: 5; }
+
+/* ── NEON BLUE ── */
+[data-theme="harry"] .style-btn.style-neonblue:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #00eeff) brightness(1.15); z-index: 10; }
+[data-theme="harry"] .style-btn.style-neonblue.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #00bbff) brightness(1.12); box-shadow: none !important; z-index: 5; }
+
+/* ── FIRE ── */
+[data-theme="harry"] .style-btn.style-fire:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #ff4400) brightness(1.15) saturate(1.2); z-index: 10; }
+[data-theme="harry"] .style-btn.style-fire.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #ff6600) brightness(1.12); box-shadow: none !important; z-index: 5; }
+
+/* ── ICE ── */
+[data-theme="harry"] .style-btn.style-ice:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #60c8ff) brightness(1.15); z-index: 10; }
+[data-theme="harry"] .style-btn.style-ice.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #a0e8ff) brightness(1.12); box-shadow: none !important; z-index: 5; }
+
+/* ── GOLD ── */
+[data-theme="harry"] .style-btn.style-gold:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #ffd700) brightness(1.15) saturate(1.2); z-index: 10; }
+[data-theme="harry"] .style-btn.style-gold.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #ffd700) brightness(1.12); box-shadow: none !important; z-index: 5; }
+
+/* ── BUBBLEGUM ── */
+[data-theme="harry"] .style-btn.style-bubblegum:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #ff0099) brightness(1.15) saturate(1.2); z-index: 10; }
+[data-theme="harry"] .style-btn.style-bubblegum.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #ff0099) brightness(1.12); box-shadow: none !important; z-index: 5; }
+
+/* ── CINEMA ── */
+[data-theme="harry"] .style-btn.style-cinema:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #f5f0e0) brightness(1.15); z-index: 10; }
+[data-theme="harry"] .style-btn.style-cinema.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #f5f0e0) brightness(1.12); box-shadow: none !important; z-index: 5; }
+
+/* ── SHADOW ── */
+[data-theme="harry"] .style-btn.style-shadow:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #ffffff) brightness(1.15); z-index: 10; }
+[data-theme="harry"] .style-btn.style-shadow.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #cccccc) brightness(1.12); box-shadow: none !important; z-index: 5; }
+
+/* ── OUTLINE ── */
+[data-theme="harry"] .style-btn.style-outline:hover  { transform: scale(1.98) translateY(-3px); filter: drop-shadow(0 0 6px #ffffff) brightness(1.15); z-index: 10; }
+[data-theme="harry"] .style-btn.style-outline.active { transform: scale(1.94) translateY(-2px); filter: drop-shadow(0 0 6px #cccccc) brightness(1.12); box-shadow: none !important; z-index: 5; }
 
 /* ── Mark panel ── */
 [data-theme="harry"] .mark-panel {

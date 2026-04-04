@@ -5,22 +5,32 @@ import escobaImg from '../themes/escoba.png'
 import botonComic2Img from '../themes/botonComic2.png'
 import gothicImg from '../themes/gothic.png'
 import consoleImg from '../themes/Console.png'
+import defaultImg from '../themes/default.png'
+import neonImg from '../themes/neon.png'
+import neonblueImg from '../themes/neonblue.png'
+import fireImg from '../themes/fire.png'
+import iceImg from '../themes/ice.png'
+import goldImg from '../themes/gold.png'
+import bubblegumImg from '../themes/bubblegum.png'
+import cinemaImg from '../themes/cinema.png'
+import shadowImg from '../themes/shadow.png'
+import outlineImg from '../themes/outline.png'
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
 const BUILTIN_STYLES = [
-  { id: 'default',   label: 'Default'   },
-  { id: 'comic',     label: 'Comic',    img: botonComic2Img },
-  { id: 'gothic',    label: 'Gothic',   img: gothicImg },
-  { id: 'console',   label: 'Console',  img: consoleImg },
-  { id: 'neon',      label: 'Neon'      },
-  { id: 'neonblue',  label: 'Neon Blue' },
-  { id: 'fire',      label: 'Fire'      },
-  { id: 'ice',       label: 'Ice'       },
-  { id: 'gold',      label: 'Gold'      },
-  { id: 'bubblegum', label: 'Bubblegum' },
-  { id: 'cinema',    label: 'Cinema'    },
-  { id: 'shadow',    label: 'Shadow'    },
-  { id: 'outline',   label: 'Outline'   },
+  { id: 'default',   label: 'Default',   img: defaultImg },
+  { id: 'comic',     label: 'Comic',     img: botonComic2Img },
+  { id: 'gothic',    label: 'Gothic',    img: gothicImg },
+  { id: 'console',   label: 'Console',   img: consoleImg },
+  { id: 'neon',      label: 'Neon',      img: neonImg },
+  { id: 'neonblue',  label: 'Neon Blue', img: neonblueImg },
+  { id: 'fire',      label: 'Fire',      img: fireImg },
+  { id: 'ice',       label: 'Ice',       img: iceImg },
+  { id: 'gold',      label: 'Gold',      img: goldImg },
+  { id: 'bubblegum', label: 'Bubblegum', img: bubblegumImg },
+  { id: 'cinema',    label: 'Cinema',    img: cinemaImg },
+  { id: 'shadow',    label: 'Shadow',    img: shadowImg },
+  { id: 'outline',   label: 'Outline',   img: outlineImg },
 ]
 
 // ── Subtítulo arrastrable ──────────────────────────────────

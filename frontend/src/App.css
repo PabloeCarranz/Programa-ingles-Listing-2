@@ -357,6 +357,30 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; colo
 .style-btn.style-shadow    { background: transparent; color: #fff; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000; border: 1px solid #555; }
 .style-btn.style-outline   { background: transparent; color: #fff; -webkit-text-stroke: 1px #000; border: 1px solid #555; }
 
+/* Botones con imagen (tema harry) */
+.style-btn:has(.style-btn-img) {
+  background: transparent !important;
+  border-color: transparent !important;
+  padding: 2px !important;
+  box-shadow: none !important;
+  transition: filter .2s, transform .2s !important;
+}
+.style-btn:has(.style-btn-img):hover {
+  filter: drop-shadow(0 0 8px rgba(255,255,255,.9)) drop-shadow(0 0 16px rgba(255,255,255,.5));
+  transform: scale(1.08);
+}
+.style-btn.active:has(.style-btn-img) {
+  border-color: transparent !important;
+  filter: drop-shadow(0 0 10px rgba(255,255,255,1)) drop-shadow(0 0 20px rgba(255,255,255,.7));
+}
+.style-btn-img {
+  display: block;
+  height: 90px;
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .size-group { display: flex; align-items: center; gap: 4px; margin-left: auto; }
 .size-btn   { background: #2d3748; border: none; color: #a0aec0; border-radius: 6px; padding: 3px 9px; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
 .size-btn:hover { background: #3a4a5c; }
