@@ -1,0 +1,13 @@
+/* Franja negra que tapa los subtítulos pegados en el video: debajo de los nuestros (.sub-stack z-index 10) */
+.sub-cover {
+  position: absolute; z-index: 9;
+  background: #000; cursor: move; touch-action: none;
+}
+/* Borde suave solo al pasar el mouse, para encontrarla sin que se vea al mirar el video */
+.sub-cover:hover { outline: 1px dashed rgba(255,255,255,.35); }
+.sub-cover-grip {
+  position: absolute; right: 0; bottom: 0; width: 16px; height: 16px;
+  cursor: nwse-resize; background: rgba(255,255,255,.25); border-top-left-radius: 5px;
+  opacity: 0; transition: opacity .15s;
+}
+.sub-cover:hover .sub-cover-grip { opacity: 1; }

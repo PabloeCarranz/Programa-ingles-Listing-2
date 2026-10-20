@@ -4,6 +4,7 @@ import { StickerSelector } from './StickerSelector'
 import { ThemeDropdown } from './ThemeDropdown'
 import JobProgress from './JobProgress'
 import SubtitleStack, { contentRect } from './SubtitleStack'
+import SubtitleCover, { loadCover, saveCover } from './SubtitleCover'
 import ExportDialog from './ExportDialog'
 import WordPopup from './WordPopup'
 import { normWord, apiError, OFFLINE } from '../lib/vocab'
@@ -427,6 +428,9 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   const [subsEs,       setSubsEs]       = useState([])
   const [currentEn,    setCurrentEn]    = useState('')
   const [currentEs,    setCurrentEs]    = useState('')
+  // Franja negra para tapar los subtítulos pegados en el video (R); se recuerda por video
+  const [cover, setCover] = useState(() => loadCover(video.name))
+  useEffect(() => { saveCover(video.name, cover) }, [cover, video.name])
   const _stickerKey = `stickers_${video.name}`
   const [stickers, setStickers] = useState(() => {
     try { return JSON.parse(localStorage.getItem(_stickerKey) ?? '[]') ?? [] }
@@ -685,7 +689,8 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
       const v = videoRef.current
       if (!v) return
       if (e.key === 't') { e.preventDefault(); setSeekMode('pan') }
-      else if (e.key === 'r') { e.preventDefault(); setSeekMode('seek') }
+      else if (e.key === 'p') { e.preventDefault(); setSeekMode('seek') }
+      else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); setCover(c => ({ ...c, on: !c.on })) }
       else if (e.code === 'Space') {
         e.preventDefault()
         v.paused ? v.play() : v.pause()
@@ -1210,6 +1215,11 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
               onRemove={() => setStickers(prev => prev.filter(sk => sk.id !== s.id))}
             />
           ))}
+          {/* Franja negra (R) sobre los subtítulos que ya trae el video; los nuestros van encima */}
+          {cover.on && (
+            <SubtitleCover rect={cover.rect} onChange={rect => setCover(c => ({ ...c, rect }))}
+              containerRef={videoWrap} videoRef={videoRef} />
+          )}
           {/* Subtítulos: un solo bloque (inglés arriba, español abajo) que se acomoda solo dentro del video */}
           <SubtitleStack
             en={showEn ? currentEn : ''}
@@ -1250,7 +1260,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
             <button
               className={`seekmode-btn ${seekMode === 'seek' ? 'seekmode-on' : ''}`}
               onClick={() => setSeekMode('seek')}
-              title="Modo puntero — clic para ir a escena (R)">
+              title="Modo puntero — clic para ir a escena (P)">
               👆
             </button>
             <button
@@ -1260,6 +1270,12 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
               🔍
             </button>
           </div>
+          <button
+            className={`seekmode-btn ${cover.on ? 'seekmode-on' : ''}`}
+            onClick={() => setCover(c => ({ ...c, on: !c.on }))}
+            title="Franja negra para tapar los subtítulos que ya trae el video (R)">
+            ▬
+          </button>
           <SeekBar
             ref={seekBarRef}
             duration={videoDuration}

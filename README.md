@@ -58,7 +58,7 @@ Botón **💾 Exportar** (arriba) o **⬇️ Bajar** en un fragmento.
 
 ## Atajos
 
-`Espacio` pausa/sigue · `←` `→` retroceden/adelantan (los segundos se ajustan) · `T` lupa de la línea de tiempo · `R` modo puntero.
+`Espacio` pausa/sigue · `←` `→` retroceden/adelantan (los segundos se ajustan) · `T` lupa de la línea de tiempo · `P` modo puntero · `R` franja negra para tapar los subtítulos que ya trae el video (se arrastra y se agranda desde la esquina; se recuerda por video).
 
 ## Si algo falla
 
