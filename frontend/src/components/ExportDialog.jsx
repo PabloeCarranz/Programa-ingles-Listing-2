@@ -20,7 +20,7 @@ function loadPrefs() {
 
 // Diálogo para guardar el video (o un fragmento) con los subtítulos puestos.
 // mode: 'video' = el video entero · 'segment' = un fragmento con sus vueltas y velocidades
-export default function ExportDialog({ mode, video, segment, subsEn, subsEs, showEn = true, showEs = true, subStyle, subSize, subOffset, subShift, subBg = true, cover = null, refHeight, currentTime, onClose }) {
+export default function ExportDialog({ mode, video, segment, subsEn, subsEs, showEn = true, showEs = true, subStyle, subSize, subOffset, subShift, subBg = true, cover = null, refHeight, view = null, currentTime, onClose }) {
   const prefs = useMemo(loadPrefs, [])
   const isSeg = mode === 'segment'
   // Idiomas marcados al abrir: los que el usuario tiene activados (🇬🇧 / 🇪🇸) en el reproductor. Si no tiene ninguno activo, los que existan.
@@ -164,7 +164,10 @@ export default function ExportDialog({ mode, video, segment, subsEn, subsEs, sho
 
         <div className="exp-body">
           {!soft && !(isSeg && !withSubs) && (
-            <div className="exp-preview">
+            // Del mismo tamaño que la imagen del video en el reproductor (view: {w, h} en px), así los subtítulos
+            // se ven igual que como se pegaron. Si no entra en la ventana, se achica entera (no cambia el archivo).
+            <div className="exp-preview"
+              style={view?.w && view?.h ? { width: view.w, maxWidth: '100%', aspectRatio: `${view.w} / ${view.h}` } : undefined}>
               {preview.url && <img src={preview.url} alt="Vista previa" style={{ opacity: preview.loading ? 0.45 : 1 }} />}
               {!preview.url && !preview.loading && !preview.error && <div className="exp-preview-empty">Elegí al menos un idioma para ver cómo queda</div>}
               {preview.loading && <div className="exp-preview-spin">Armando vista previa…</div>}

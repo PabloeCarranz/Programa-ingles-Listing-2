@@ -1682,7 +1682,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
           subsEn={subsEn} subsEs={subsEs} showEn={showEn} showEs={showEs}
           subStyle={subStyle} subSize={subSize} subOffset={subOffset} subShift={subShift}
           subBg={subBg} cover={cover}
-          refHeight={exportReq.h} currentTime={exportReq.t}
+          refHeight={exportReq.h} view={exportReq.content} currentTime={exportReq.t}
           onClose={() => setExportReq(null)}
         />
       )}
