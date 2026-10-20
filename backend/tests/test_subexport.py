@@ -61,6 +61,37 @@ class PureTests(unittest.TestCase):
         self.assertEqual(n('outline'), 1)     # solo texto con contorno
         self.assertEqual(n('estilo-que-no-existe'), 2)   # cae en "default"
 
+    def test_fondo_off_saca_la_caja_y_conserva_el_resto(self):
+        geo = sx.Geometry(1280, 720, 400)
+        entries = [(0, 2, 'Hello there', '')]
+        n = lambda style: len(sx.build_events(entries, geo, style, bg=False))
+        self.assertEqual(n('default'), 1)     # solo texto
+        self.assertEqual(n('comic'), 1)       # el borde de la caja se va con la caja
+        self.assertEqual(n('gothic'), 2)      # brillo + texto
+        self.assertEqual(n('outline'), 1)     # no tenía caja: igual que siempre
+        # El Default sin caja lleva borde negro en las letras para leerse sobre la imagen
+        ev = sx.build_events(entries, geo, 'default', bg=False)[0]
+        self.assertIn('\\bord', ev)
+        self.assertNotIn('\\bord0', ev)
+        # Con fondo (lo de siempre) no cambia nada
+        self.assertEqual(sx.build_events(entries, geo, 'default'), sx.build_events(entries, geo, 'default', bg=True))
+
+    def test_franja_negra_como_drawbox(self):
+        self.assertEqual(sx.cover_filter({'x': 10, 'y': 80, 'w': 80, 'h': 15}, 1280, 720),
+                         'drawbox=x=128:y=576:w=1024:h=108:color=black:t=fill,')
+        self.assertEqual(sx.cover_filter(None, 1280, 720), '')
+        self.assertEqual(sx.cover_filter({'x': 10}, 1280, 720), '')                 # datos incompletos: sin franja
+        # Si se pasa de los bordes se recorta a la imagen
+        self.assertEqual(sx.cover_filter({'x': 90, 'y': 95, 'w': 30, 'h': 30}, 1000, 500),
+                         'drawbox=x=900:y=475:w=100:h=25:color=black:t=fill,')
+        self.assertEqual(sx.cover_filter({'x': 100, 'y': 0, 'w': 5, 'h': 5}, 1000, 500), '')   # quedó afuera
+
+    def test_franja_en_todas_las_vueltas_y_antes_de_los_subtitulos(self):
+        cover = {'x': 0, 'y': 50, 'w': 100, 'h': 50}
+        g = sx.build_segment_graph([{'speed': 1, 'ass': 'r0.ass'}, {'speed': 0.5, 'ass': None}], 30, False, 1280, 720, 1280, 720, cover)
+        self.assertEqual(g.count('drawbox='), 2)
+        self.assertLess(g.index('drawbox='), g.index('ass=r0.ass'))
+
     def test_dos_idiomas_son_dos_bloques_apilados_sin_solaparse(self):
         import re
         geo = sx.Geometry(1280, 720, 400)
@@ -213,6 +244,19 @@ class FfmpegTests(unittest.TestCase):
                             '-of', 'json', p], capture_output=True, text=True)
         streams = json.loads(r.stdout)['streams']
         self.assertEqual([s['tags']['language'] for s in streams], ['eng', 'spa'])
+
+    def test_franja_negra_tapa_la_imagen_y_los_subtitulos_van_encima(self):
+        # Franja en la mitad de abajo; subtítulos sin fondo en el medio de la franja
+        p = sx.export_video(self.video, self.out, 'prueba.mp4', self.en, [],
+                            dict(style='default', en=True, es=False, ref_h=360, sub_bg=False,
+                                 offset={'x': 0, 'y': 5}, cover={'x': 0, 'y': 50, 'w': 100, 'h': 50}))
+        img = os.path.join(self.dir, 'franja.png')
+        subprocess.run(['ffmpeg', '-y', '-v', 'error', '-ss', '0.8', '-i', p, '-frames:v', '1', img], check=True)
+        from PIL import Image
+        im = Image.open(img).convert('L')
+        self.assertLess(im.crop((20, 330, 620, 355)).getextrema()[1], 40)          # abajo de todo: negro (era el testsrc de colores)
+        self.assertGreater(im.crop((0, 180, 640, 330)).getextrema()[1], 200)       # en la franja se ven las letras blancas
+        self.assertGreater(im.crop((0, 0, 640, 170)).getextrema()[1], 200)         # arriba la imagen sigue igual
 
     def test_vista_previa_devuelve_un_jpeg(self):
         jpg = sx.render_preview(self.video, 0.8, self.en, self.es, dict(style='neon', en=True, es=True, ref_h=360))

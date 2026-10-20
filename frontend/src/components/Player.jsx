@@ -1681,6 +1681,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
           segment={exportReq.mode === 'segment' ? segments[exportReq.idx] : null}
           subsEn={subsEn} subsEs={subsEs} showEn={showEn} showEs={showEs}
           subStyle={subStyle} subSize={subSize} subOffset={subOffset} subShift={subShift}
+          subBg={subBg} cover={cover}
           refHeight={exportReq.h} currentTime={exportReq.t}
           onClose={() => setExportReq(null)}
         />

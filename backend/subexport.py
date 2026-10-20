@@ -84,10 +84,19 @@ ES_OVERRIDES = {
 DEFAULT_PAD = (18, 6)
 
 
-def style_spec(style_id, lang='en'):
+NOBG_OUTLINE = ('#000000', 2.5)   # 🔲 Fondo OFF en el Default: borde negro en las letras (como en el reproductor)
+
+
+def style_spec(style_id, lang='en', bg=True):
+    """bg=False (🔲 Fondo OFF): sin la caja del estilo; cada estilo conserva su color, borde y brillo."""
     base = dict(STYLES.get(style_id) or STYLES['default'])
     if lang == 'es':
         base.update(ES_OVERRIDES.get(style_id if style_id in STYLES else 'default', {}))
+    if not bg:
+        base.pop('bg', None)
+        base.pop('box_shadow', None)
+        if (style_id not in STYLES or style_id == 'default') and not base.get('outline'):
+            base['outline'] = NOBG_OUTLINE
     base.setdefault('bold', False)
     base.setdefault('sp', 0)
     base.setdefault('mul', 1.0)
@@ -257,10 +266,10 @@ class Geometry:
         self.cx_pct, self.top_pct = base_x + x, base_y + y
 
 
-def build_events(entries, geo, style_id, show_en=True, show_es=True):
+def build_events(entries, geo, style_id, show_en=True, show_es=True, bg=True):
     """Convierte la línea de tiempo en líneas 'Dialogue'. Cada idioma es un bloque (con varias capas:
     borde, caja, brillo y texto) y los bloques se apilan con una separación, como en el reproductor."""
-    spec = {'en': style_spec(style_id, 'en'), 'es': style_spec(style_id, 'es')}
+    spec = {'en': style_spec(style_id, 'en', bg), 'es': style_spec(style_id, 'es', bg)}
     s_en = spec['en']
     meas = Measure(s_en['font'], s_en['bold'])
     ratio = meas.ratio()
@@ -380,8 +389,26 @@ def ass_header(width, height, style_id):
     )
 
 
-def build_ass(entries, width, height, style_id, geo, show_en=True, show_es=True):
-    return ass_header(width, height, style_id) + '\n'.join(build_events(entries, geo, style_id, show_en, show_es)) + '\n'
+def build_ass(entries, width, height, style_id, geo, show_en=True, show_es=True, bg=True):
+    return ass_header(width, height, style_id) + '\n'.join(build_events(entries, geo, style_id, show_en, show_es, bg)) + '\n'
+
+
+def cover_filter(cover, width, height):
+    """▬ Franja negra del reproductor como filtro de ffmpeg (va antes de los subtítulos, que quedan encima).
+    cover: {'x', 'y', 'w', 'h'} en % de la imagen, o None. Devuelve 'drawbox=…,' o ''."""
+    if not cover:
+        return ''
+    try:
+        x, y, w, h = (float(cover[k]) for k in ('x', 'y', 'w', 'h'))
+    except (KeyError, TypeError, ValueError):
+        return ''
+    x0 = max(0, min(width, round(width * x / 100)))
+    y0 = max(0, min(height, round(height * y / 100)))
+    x1 = max(x0, min(width, round(width * (x + w) / 100)))
+    y1 = max(y0, min(height, round(height * (y + h) / 100)))
+    if x1 - x0 < 1 or y1 - y0 < 1:
+        return ''
+    return f'drawbox=x={x0}:y={y0}:w={x1 - x0}:h={y1 - y0}:color=black:t=fill,'
 
 
 def write_ass(path, text):
@@ -571,6 +598,10 @@ def langs_label(show_en, show_es):
 # ══════════════════════════════════════════════════════════════
 #  Exportaciones
 # ══════════════════════════════════════════════════════════════
+def _opt_bg(opts):
+    return opts.get('sub_bg', True) is not False
+
+
 def _opts_geometry(info, out_w, out_h, opts):
     return Geometry(out_w, out_h, opts.get('ref_h') or 400, opts.get('size_rem') or 1.1,
                     (opts.get('offset') or {}).get('x', 0.0), (opts.get('offset') or {}).get('y', 0.0))
@@ -590,9 +621,10 @@ def render_preview(video_path, t, subs_en, subs_es, opts):
     geo = _opts_geometry(info, out_w, out_h, opts)
     work = tempfile.mkdtemp(prefix='prev_')
     try:
-        write_ass(os.path.join(work, 's.ass'), build_ass(entries, out_w, out_h, style, geo, show_en, show_es))
+        write_ass(os.path.join(work, 's.ass'), build_ass(entries, out_w, out_h, style, geo, show_en, show_es, _opt_bg(opts)))
         prepare_fonts(work, style)
-        vf = (f'scale={out_w}:{out_h},' if (out_w, out_h) != (info['width'], info['height']) else '') + 'ass=s.ass:fontsdir=fonts'
+        vf = ((f'scale={out_w}:{out_h},' if (out_w, out_h) != (info['width'], info['height']) else '')
+              + cover_filter(opts.get('cover'), out_w, out_h) + 'ass=s.ass:fontsdir=fonts')
         out = os.path.join(work, 'p.jpg')
         r = subprocess.run(['ffmpeg', '-y', '-v', 'error', '-ss', f'{t:.3f}', '-i', video_path, '-frames:v', '1',
                             '-vf', vf, '-q:v', '3', out], cwd=work, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60)
@@ -618,9 +650,10 @@ def export_video(video_path, out_dir, video_name, subs_en, subs_es, opts, job=No
     geo = _opts_geometry(info, out_w, out_h, opts)
     work = tempfile.mkdtemp(prefix='exp_')
     try:
-        write_ass(os.path.join(work, 's.ass'), build_ass(entries, out_w, out_h, style, geo, show_en, show_es))
+        write_ass(os.path.join(work, 's.ass'), build_ass(entries, out_w, out_h, style, geo, show_en, show_es, _opt_bg(opts)))
         prepare_fonts(work, style)
-        vf = (f'scale={out_w}:{out_h},' if (out_w, out_h) != (info['width'], info['height']) else '') + 'ass=s.ass:fontsdir=fonts'
+        vf = ((f'scale={out_w}:{out_h},' if (out_w, out_h) != (info['width'], info['height']) else '')
+              + cover_filter(opts.get('cover'), out_w, out_h) + 'ass=s.ass:fontsdir=fonts')
         tmp_out = os.path.join(work, 'out.mp4')
         audio = ['-c:a', 'copy'] if info['audio_codec'] in ('aac', 'mp3') else ['-c:a', 'aac', '-b:a', '192k']
 
@@ -710,10 +743,11 @@ def export_soft(video_path, out_dir, video_name, subs_en, subs_es, opts, job=Non
         shutil.rmtree(work, ignore_errors=True)
 
 
-def build_segment_graph(reps, fps, has_audio, out_w, out_h, src_w, src_h):
-    """Filtro de ffmpeg para unir las vueltas de un fragmento. reps: [{'speed', 'ass': 'r0.ass' | None}]."""
+def build_segment_graph(reps, fps, has_audio, out_w, out_h, src_w, src_h, cover=None):
+    """Filtro de ffmpeg para unir las vueltas de un fragmento. reps: [{'speed', 'ass': 'r0.ass' | None}].
+    cover: la franja negra (en todas las vueltas, aunque alguna vaya sin subtítulos)."""
     parts, labels = [], []
-    scale = f'scale={out_w}:{out_h},' if (out_w, out_h) != (src_w, src_h) else ''
+    scale = (f'scale={out_w}:{out_h},' if (out_w, out_h) != (src_w, src_h) else '') + cover_filter(cover, out_w, out_h)
     for i, rp in enumerate(reps):
         sp = max(0.5, min(2.0, float(rp['speed'])))
         vchain = scale + (f"ass={rp['ass']}:fontsdir=fonts," if rp.get('ass') else '') + f'setpts=PTS/{sp:.4f},fps={fps:.3f},setsar=1'
@@ -758,14 +792,15 @@ def export_segment(video_path, out_dir, video_name, phrase, start, end, reps, su
                     entries = [(a - start, b - start, e, s) for a, b, e, s in entries]
                     if entries:
                         name = f'r{len(ass_cache)}.ass'
-                        write_ass(os.path.join(work, name), build_ass(entries, out_w, out_h, style, geo, en, es))
+                        write_ass(os.path.join(work, name), build_ass(entries, out_w, out_h, style, geo, en, es, _opt_bg(opts)))
                         ass_cache[key] = name
                     else:
                         ass_cache[key] = None
                 ass_name = ass_cache[key]
             graph_reps.append({'speed': rp.get('speed') or 1, 'ass': ass_name})
         total = sum(dur / max(0.5, min(2.0, float(r['speed']))) for r in graph_reps)
-        graph = build_segment_graph(graph_reps, info['fps'], info['has_audio'], out_w, out_h, info['width'], info['height'])
+        graph = build_segment_graph(graph_reps, info['fps'], info['has_audio'], out_w, out_h, info['width'], info['height'],
+                                    opts.get('cover'))
         tmp_out = os.path.join(work, 'out.mp4')
 
         def attempt(encoder):

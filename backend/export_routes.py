@@ -33,6 +33,8 @@ class ExportOpts(BaseModel):
     shift: float = 0                      # delay de los subtítulos (s)
     quality: str = 'media'                # alta | media | liviana
     mode: str = 'hard'                    # hard (grabados) | soft (pistas)
+    sub_bg: bool = True                   # 🔲 Fondo: la caja del estilo detrás de las letras
+    cover: dict | None = None             # ▬ franja negra {x, y, w, h} en % de la imagen, o None
 
 
 class PreviewBody(ExportOpts):
@@ -79,7 +81,7 @@ def register(app, ctx):
 
     def opts_of(b):
         return dict(style=b.style, en=b.en, es=b.es, size_rem=b.size_rem, ref_h=b.ref_h,
-                    offset=b.offset, shift=b.shift, quality=b.quality)
+                    offset=b.offset, shift=b.shift, quality=b.quality, sub_bg=b.sub_bg, cover=b.cover)
 
     def disposition(filename):
         ascii_name = filename.encode('ascii', 'replace').decode('ascii').replace('"', '_').replace('?', '_')

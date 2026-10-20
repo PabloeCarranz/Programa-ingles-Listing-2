@@ -20,7 +20,7 @@ function loadPrefs() {
 
 // Diálogo para guardar el video (o un fragmento) con los subtítulos puestos.
 // mode: 'video' = el video entero · 'segment' = un fragmento con sus vueltas y velocidades
-export default function ExportDialog({ mode, video, segment, subsEn, subsEs, showEn = true, showEs = true, subStyle, subSize, subOffset, subShift, refHeight, currentTime, onClose }) {
+export default function ExportDialog({ mode, video, segment, subsEn, subsEs, showEn = true, showEs = true, subStyle, subSize, subOffset, subShift, subBg = true, cover = null, refHeight, currentTime, onClose }) {
   const prefs = useMemo(loadPrefs, [])
   const isSeg = mode === 'segment'
   // Idiomas marcados al abrir: los que el usuario tiene activados (🇬🇧 / 🇪🇸) en el reproductor. Si no tiene ninguno activo, los que existan.
@@ -35,6 +35,9 @@ export default function ExportDialog({ mode, video, segment, subsEn, subsEs, sho
   const [quality, setQuality] = useState(prefs.quality || 'media')
   const [useReps, setUseReps] = useState(true)       // fragmento: respetar las vueltas y velocidades
   const [withSubs, setWithSubs] = useState(true)     // fragmento: grabar subtítulos
+  // Arrancan como están en el reproductor: 🔲 Fondo y ▬ franja negra (cover: {on, rect})
+  const [bg, setBg] = useState(subBg)
+  const [band, setBand] = useState(!!cover?.on)
   const [folder, setFolder] = useState('')
   const [jobId, setJobId] = useState(null)
   const [status, setStatus] = useState(null)
@@ -71,6 +74,7 @@ export default function ExportDialog({ mode, video, segment, subsEn, subsEs, sho
     video: video.name, style,
     en: lang.en, es: lang.es,
     size_rem: subSize, ref_h: refHeight || 400, offset: subOffset, shift: subShift, quality, mode: format,
+    sub_bg: bg, cover: band && cover?.rect ? cover.rect : null,
   })
 
   useEffect(() => {
@@ -98,7 +102,7 @@ export default function ExportDialog({ mode, video, segment, subsEn, subsEs, sho
       }
     }, 300)
     return () => { stop = true; clearTimeout(timer) }
-  }, [style, lang.en, lang.es, quality, format, previewT, withSubs, subSize, subOffset, subShift, refHeight]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [style, lang.en, lang.es, quality, format, previewT, withSubs, subSize, subOffset, subShift, refHeight, bg, band]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { setPreview(p => { if (p.url) URL.revokeObjectURL(p.url); return p }) }, [])
 
   async function start() {
@@ -220,6 +224,20 @@ export default function ExportDialog({ mode, video, segment, subsEn, subsEs, sho
                     {STYLES.map(([id, label]) => (
                       <button key={id} type="button" className={`exp-pill style-${id}${style === id ? ' exp-pill-on' : ''}`} onClick={() => setStyle(id)}>{label}</button>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {!soft && (
+                <div className="exp-row">
+                  <span className="exp-lbl">Imagen</span>
+                  <div className="exp-opts">
+                    {!(isSeg && !withSubs) && (
+                      <label className="exp-check" title="El recuadro translúcido detrás de las letras (como el botón 🔲 Fondo del reproductor)">
+                        <input type="checkbox" checked={bg} onChange={e => setBg(e.target.checked)} /> 🔲 Fondo detrás de las letras</label>
+                    )}
+                    <label className="exp-check" title="La franja negra (R) del reproductor, en el mismo lugar: tapa los subtítulos que ya traía el video">
+                      <input type="checkbox" checked={band} onChange={e => setBand(e.target.checked)} /> ▬ Franja negra</label>
                   </div>
                 </div>
               )}
