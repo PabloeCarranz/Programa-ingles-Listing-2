@@ -23,6 +23,14 @@
   white-space: normal; overflow-wrap: anywhere; text-wrap: balance; line-height: 1.25;
 }
 
+/* 🔲 Fondo OFF: solo las letras, sin el recuadro del estilo (cada estilo conserva su color y su brillo) */
+.sub-stack .sub-overlay.sub-nobg {
+  background: transparent !important; border-color: transparent !important;
+  box-shadow: none !important; backdrop-filter: none !important;
+}
+/* El Default se lee por el recuadro: sin él, borde negro alrededor de cada letra */
+.sub-stack .sub-default.sub-nobg { text-shadow: 0 0 3px #000, 0 0 3px #000, 1px 1px 2px #000, -1px -1px 2px #000; }
+
 /* Pantalla completa: se agranda el contenedor del video (no solo el <video>) para que se vean subtítulos y stickers */
 .player-left .video-wrap:fullscreen {
   display: flex; align-items: center; justify-content: center;

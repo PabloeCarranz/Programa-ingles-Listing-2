@@ -472,7 +472,11 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   const [showEn,       setShowEn]       = useState(true)
   const [showEs,       setShowEs]       = useState(true)
   const [subStyle,     setSubStyle]     = useState('default')
-  const [subSize,      setSubSize]      = useState(() => {   // tamaño de letra: se recuerda entre videos y recargas (y lo usa Exportar)
+  const [subBg,        setSubBg]        = useState(() => {   // recuadro detrás de las letras: a elección, se recuerda
+    try { return localStorage.getItem('sub_bg') !== '0' } catch { return true }
+  })
+  useEffect(() => { try { localStorage.setItem('sub_bg', subBg ? '1' : '0') } catch { /* sin localStorage no se recuerda */ } }, [subBg])
+  const [subSize,     setSubSize]      = useState(() => {   // tamaño de letra: se recuerda entre videos y recargas (y lo usa Exportar)
     try { const v = parseFloat(localStorage.getItem('sub_size')); return v >= 0.7 && v <= 3 ? v : 1.1 } catch { return 1.1 }
   })
   const [subOffset,    setSubOffset]    = useState({ x: 0, y: 0 })
@@ -1118,7 +1122,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   function flashSaved() { setSaved(true); setTimeout(() => setSaved(false), 1500) }
   function fmt(s) { const m = Math.floor(s / 60); return `${m}:${(s % 60).toFixed(1).padStart(4, '0')}` }
 
-  const builtinClass   = `sub-overlay sub-${subStyle}`
+  const builtinClass   = `sub-overlay sub-${subStyle}${subBg ? '' : ' sub-nobg'}`
 
   return (
     <div className="player-shell">
@@ -1338,6 +1342,10 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
         <div className="sub-controls-row">
           <button className={`sub-toggle ${showEn ? 'active' : ''}`} onClick={() => setShowEn(v => !v)}>🇬🇧 {showEn ? 'ON' : 'OFF'}</button>
           <button className={`sub-toggle ${showEs ? 'active' : ''}`} onClick={() => setShowEs(v => !v)}>🇪🇸 {showEs ? 'ON' : 'OFF'}</button>
+          <button className={`sub-toggle ${subBg ? 'active' : ''}`} onClick={() => setSubBg(v => !v)}
+            title="Recuadro translúcido detrás de las letras (apagado: solo letras con borde, ideal con la franja negra)">
+            🔲 Fondo {subBg ? 'ON' : 'OFF'}
+          </button>
           <div className="style-group">
             {BUILTIN_STYLES.map(st => (
               <button key={st.id} className={`style-btn style-${st.id} ${subStyle === st.id ? 'active' : ''}`} onClick={() => setSubStyle(st.id)}>
