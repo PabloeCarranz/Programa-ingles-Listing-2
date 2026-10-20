@@ -2,7 +2,8 @@
 fastapi>=0.110
 uvicorn[standard]>=0.27      # [standard] incluye "websockets" (control remoto desde el celular)
 python-multipart>=0.0.9      # subir videos
-openai-whisper               # ✨ Auto: subtítulos en inglés (necesita torch)
+openai-whisper               # ✨ Auto: subtítulos en inglés (necesita torch); se usa con placa NVIDIA
+faster-whisper               # ✨ Auto sin NVIDIA: el mismo modelo, bastante más rápido en el procesador
 imageio-ffmpeg               # ffmpeg de respaldo si no está instalado en el sistema
 Pillow>=9                    # medir el texto al exportar videos con subtítulos
 yt-dlp                       # traer videos de YouTube pegando el link (conviene actualizarlo seguido: pip install -U yt-dlp)

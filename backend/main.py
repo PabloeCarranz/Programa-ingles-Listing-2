@@ -26,22 +26,42 @@ _setup_ffmpeg()
 
 # ── Whisper ───────────────────────────────────────────────────
 from jobs import JobState, snap, clock
+import transcriber
 
 _jobs = {}
 _whisper_model = None
 _whisper_model_name = None
 _whisper_lock = threading.Lock()
 
+def _use_faster_whisper():
+    # LISTENING_WHISPER=openai|faster lo fuerza. Si no: con NVIDIA (torch con CUDA) openai-whisper
+    # usa la placa y es lo más rápido; sin NVIDIA, faster-whisper rinde mucho más en el procesador.
+    forced = os.environ.get('LISTENING_WHISPER', '').lower()
+    if forced in ('openai', 'faster'):
+        return forced == 'faster' and transcriber.available()
+    if not transcriber.available():
+        return False
+    try:
+        import torch
+        return not torch.cuda.is_available()
+    except ImportError:
+        return True
+
 def _load_whisper(model_name='small'):
     # Un solo modelo en memoria; si piden otro distinto, se reemplaza (antes se ignoraba el nombre)
     global _whisper_model, _whisper_model_name
+    faster = _use_faster_whisper()
+    key = ('faster' if faster else 'openai', model_name)
     with _whisper_lock:
-        if _whisper_model is None or _whisper_model_name != model_name:
-            import whisper
+        if _whisper_model is None or _whisper_model_name != key:
             _whisper_model = None
-            _whisper_model = whisper.load_model(model_name)
-            _whisper_model_name = model_name
-        return _whisper_model
+            if faster:
+                _whisper_model = transcriber.load_model(model_name)
+            else:
+                import whisper
+                _whisper_model = whisper.load_model(model_name)
+            _whisper_model_name = key
+        return faster, _whisper_model
 
 _progress_cb = threading.local()   # cada transcripción corre en su hilo y deja acá su función de avance
 
@@ -82,8 +102,16 @@ def _run_transcription(video_name, video_path, model_name, lang, job):
 def _transcribe_video(video_name, video_path, model_name, lang, job):
     try:
         job.update(msg='Cargando el modelo de IA…')
-        m = _load_whisper(model_name)
+        faster, m = _load_whisper(model_name)
         job.begin_phase('Preparando el audio…')
+        if faster:
+            def on_seconds(done, total):
+                job.update(progress=done / total, msg='Transcribiendo audio…',
+                           detail=f'{clock(done)} de {clock(total)}')
+            subs = transcriber.transcribe(m, video_path, lang, on_seconds)
+            _save_subs(video_name, lang, subs)
+            job.done(subs=subs)
+            return
         _hook_whisper_progress()
 
         def on_progress(frames, total_frames):      # 1 cuadro = 10 ms de audio
@@ -112,7 +140,13 @@ def _transcribe_video(video_name, video_path, model_name, lang, job):
 
 # ── Config ────────────────────────────────────────────────────
 # Se pueden cambiar con variables de entorno (útil para probar sin tocar los videos reales)
-VIDEOS_DIR = os.environ.get('LISTENING_VIDEOS_DIR', r'D:\VideosIngles')
+def _default_videos_dir():
+    # La carpeta de siempre si hay disco D:; si no (otra compu), "videos" al lado del programa
+    if os.path.isdir('D:\\'):
+        return r'D:\VideosIngles'
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'videos')
+
+VIDEOS_DIR = os.environ.get('LISTENING_VIDEOS_DIR') or _default_videos_dir()
 PORT       = int(os.environ.get('LISTENING_PORT', '8002'))
 SEGS_DIR   = os.path.join(VIDEOS_DIR, '.segments')
 SUBS_DIR   = os.path.join(VIDEOS_DIR, '.subtitles')

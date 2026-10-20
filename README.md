@@ -8,6 +8,7 @@ marcar fragmentos para repetirlos las veces que quieras, a la velocidad que quie
 - **Traer videos de YouTube**: pegá el link en el cuadro de arriba de la pantalla inicial (o tocá 📋 Pegar) y el video se baja solo a tu carpeta de videos, con relojito de avance. Hasta 1080p, un video a la vez por link; si ya lo tenías te avisa. Solo anda desde la compu donde corre el programa.
 - **Mis palabras** 📚: mientras mirás un video, **tocá cualquier palabra del subtítulo en inglés**: ves cómo se traduce (con otros significados para elegir), la guardás con un clic y queda subrayada cuando vuelve a aparecer. Después la repasás con tarjetas que **vuelven a reproducir la frase del video donde la escuchaste**. Mirá más abajo.
 - **Subtítulos automáticos** (✨ Auto): al abrir un video sin subtítulos se traen solos (se puede desactivar). Un relojito muestra el avance y cuánto falta.
+  Con placa NVIDIA usa Whisper con la placa; sin NVIDIA usa *faster-whisper*, que en el procesador es bastante más rápido, y corta las frases donde hay pausas largas (se fuerza uno u otro con `LISTENING_WHISPER=openai` o `faster`).
   Si ya están, el botón queda en *✓ Ya traídos*; con *↻ Volver a traer* los regenerás (con confirmación).
 - **Traducción al español** (🌐 Traducir) en pocos segundos, con progreso y errores claros. También podés importar o bajar `.srt`.
 - **Fragmentos**: marcá inicio y fin; cada fragmento tiene sus *vueltas*, y cada vuelta su velocidad (0.5x – 2x, con 0.8 / 0.85 / 0.9 / 0.95) y su idioma de subtítulos.
@@ -19,14 +20,14 @@ marcar fragmentos para repetirlos las veces que quieras, a la velocidad que quie
 ## Cómo se inicia
 
 1. Doble clic en **`iniciar.bat`** (cierra la versión anterior —solo la de esta app— y abre todo). Se abre `http://localhost:5174`.
-2. La primera vez, instalá lo necesario:
+2. La primera vez en una compu nueva, `iniciar.bat` instala solo lo que falta (puede tardar unos minutos). Si preferís hacerlo a mano:
    ```
    pip install -r backend\requirements.txt
    cd frontend && npm install
    ```
    También hace falta **ffmpeg con libass** en el PATH (la versión *full* de https://www.gyan.dev/ffmpeg/builds/).
 
-Los videos y todo lo que genera la app viven en `D:\VideosIngles` (se cambia con la variable de entorno `LISTENING_VIDEOS_DIR`):
+Los videos y todo lo que genera la app viven en `D:\VideosIngles`; si la compu no tiene disco `D:`, en la carpeta `videos` al lado del programa (se cambia con la variable de entorno `LISTENING_VIDEOS_DIR`):
 
 | Carpeta | Qué guarda |
 |---|---|

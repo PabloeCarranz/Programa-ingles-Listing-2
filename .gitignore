@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .env
+
+# Videos de la app cuando no hay disco D: (pesan mucho, no van al repo)
+videos/
