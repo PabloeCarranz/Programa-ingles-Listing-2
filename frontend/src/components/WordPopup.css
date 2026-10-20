@@ -1,0 +1,57 @@
+/* Ventanita de una palabra del subtítulo (traducir y guardar). Vive dentro del contenedor del video. */
+.wp {
+  position: absolute; z-index: 40; overflow-y: auto; box-sizing: border-box;
+  padding: 12px 14px; background: #1a202c; color: #e2e8f0; border: 1px solid #4a5568; border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.6); font-size: 14px; line-height: 1.35; text-align: left; cursor: default;
+}
+.wp-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.wp-word { flex: 1; min-width: 0; font-size: 1.25rem; font-weight: 700; color: #63b3ed; overflow-wrap: anywhere; }
+.wp-icon { background: none; border: none; color: #a0aec0; font-size: 1rem; cursor: pointer; padding: 3px 7px; border-radius: 6px; }
+.wp-icon:hover { background: #2d3748; color: #fff; }
+
+.wp-input {
+  width: 100%; box-sizing: border-box; background: #0f1117; color: #f7fafc; border: 1px solid #2d3748; border-radius: 8px;
+  padding: 8px 10px; font-size: 1.05rem; font-weight: 600; outline: none;
+}
+.wp-input:focus { border-color: #4299e1; }
+.wp-input::placeholder { color: #4a5568; font-weight: 400; }
+.wp-tr { font-size: 1.1rem; font-weight: 600; color: #f7fafc; }
+
+.wp-meanings { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.wp-group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.wp-pos { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #718096; margin-right: 2px; }
+.wp-chip { background: #2d3748; color: #e2e8f0; border: none; border-radius: 999px; padding: 2px 9px; font-size: .82rem; cursor: pointer; }
+.wp-chip:hover { background: #4299e1; color: #fff; }
+
+.wp-error { margin-top: 8px; font-size: .8rem; color: #fc8181; }
+.wp-sub { margin-top: 2px; color: #a0aec0; }
+.wp-link { background: none; border: none; color: #63b3ed; cursor: pointer; text-decoration: underline; font-size: inherit; padding: 0; }
+
+.wp-actions { margin-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.wp-btn { background: #2d3748; color: #e2e8f0; border: none; border-radius: 8px; padding: 8px 12px; font-size: .85rem; font-weight: 600; cursor: pointer; }
+.wp-btn:hover:not(:disabled) { background: #3a4a5c; color: #fff; }
+.wp-btn:disabled { opacity: .5; cursor: default; }
+.wp-btn-main { flex: 1; background: #3182ce; color: #fff; }
+.wp-btn-main:hover:not(:disabled) { background: #4299e1; }
+.wp-ok { color: #68d391; font-weight: 600; font-size: .88rem; }
+
+/* Temas (el archivo de cada tema no se toca: acá solo se adapta esta ventanita) */
+[data-theme="harry"] .wp { background: linear-gradient(135deg, #2d1a0a 0%, #1e1005 100%); border: 1.5px solid #8b6014; border-radius: 6px; color: #f1dfb0; }
+[data-theme="harry"] .wp-word, [data-theme="harry"] .wp-tr { color: #e8c96a; font-family: 'Cinzel', 'Palatino Linotype', serif; }
+[data-theme="harry"] .wp-input { background: #1a0e04; color: #f1dfb0; border: 1px solid #8b6014; border-radius: 4px; }
+[data-theme="harry"] .wp-input::placeholder, [data-theme="harry"] .wp-pos { color: #b8956a; }
+[data-theme="harry"] .wp-chip, [data-theme="harry"] .wp-btn { background: linear-gradient(180deg, #3d2510 0%, #2d1a0a 100%); border: 1px solid #8b6014; color: #d4b483; border-radius: 4px; }
+[data-theme="harry"] .wp-btn-main, [data-theme="harry"] .wp-chip:hover { background: linear-gradient(180deg, #8b6014 0%, #5c3f0c 100%); color: #fff3cf; }
+[data-theme="harry"] .wp-icon, [data-theme="harry"] .wp-link { color: #d4b483; }
+[data-theme="harry"] .wp-icon:hover { background: #3d2510; }
+[data-theme="comic"] .wp { background: #fff7d6; color: #000; border: 3px solid #000; border-radius: 0; box-shadow: 5px 5px 0 #000; }
+[data-theme="comic"] .wp-word, [data-theme="comic"] .wp-tr { color: #000; font-family: 'Bangers', cursive; letter-spacing: 1px; }
+[data-theme="comic"] .wp-input { background: #fff; color: #000; border: 3px solid #000; border-radius: 0; }
+[data-theme="comic"] .wp-input::placeholder, [data-theme="comic"] .wp-pos, [data-theme="comic"] .wp-sub { color: #444; }
+[data-theme="comic"] .wp-chip, [data-theme="comic"] .wp-btn { background: #fff; color: #000; border: 2px solid #000; border-radius: 0; box-shadow: 2px 2px 0 #000; }
+[data-theme="comic"] .wp-btn { font-family: 'Bangers', cursive; letter-spacing: 1px; }
+[data-theme="comic"] .wp-btn-main, [data-theme="comic"] .wp-chip:hover { background: #fff200; color: #000; }
+[data-theme="comic"] .wp-icon, [data-theme="comic"] .wp-link { color: #000; }
+[data-theme="comic"] .wp-icon:hover { background: #fff200; }
+[data-theme="comic"] .wp-error { color: #b00020; }
+[data-theme="comic"] .wp-ok { color: #0a6b2d; }

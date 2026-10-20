@@ -1,9 +1,9 @@
-from fastapi import FastAPI, UploadFile, File, Query, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Query, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
-import json, os, re, threading, shutil, tempfile, subprocess
+import json, os, re, threading, shutil, tempfile, subprocess, socket
 
 # ── ffmpeg ────────────────────────────────────────────────────
 def _setup_ffmpeg():
@@ -25,25 +25,77 @@ def _setup_ffmpeg():
 _setup_ffmpeg()
 
 # ── Whisper ───────────────────────────────────────────────────
+from jobs import JobState, snap, clock
+
 _jobs = {}
 _whisper_model = None
+_whisper_model_name = None
+_whisper_lock = threading.Lock()
 
 def _load_whisper(model_name='small'):
-    global _whisper_model
-    if _whisper_model is None:
-        import whisper
-        _whisper_model = whisper.load_model(model_name)
-    return _whisper_model
+    # Un solo modelo en memoria; si piden otro distinto, se reemplaza (antes se ignoraba el nombre)
+    global _whisper_model, _whisper_model_name
+    with _whisper_lock:
+        if _whisper_model is None or _whisper_model_name != model_name:
+            import whisper
+            _whisper_model = None
+            _whisper_model = whisper.load_model(model_name)
+            _whisper_model_name = model_name
+        return _whisper_model
 
-def _run_transcription(video_name, video_path, model_name, lang):
-    job_key = f'{video_name}_{lang}'
-    _jobs[job_key] = {'status': 'running', 'msg': 'Cargando modelo...', 'subs': []}
+_progress_cb = threading.local()   # cada transcripción corre en su hilo y deja acá su función de avance
+
+def _hook_whisper_progress():
+    # Whisper tiene una barra (tqdm) interna que avanza con cada ventana de ~30 s de audio.
+    # Se la reemplaza, solo dentro de whisper.transcribe, por una que además avisa el avance.
+    import sys, types, whisper  # noqa: F401  (al importar whisper queda registrado su submódulo)
+    wt = sys.modules.get('whisper.transcribe')
+    if wt is None or getattr(wt, '_listening_hooked', False):
+        return
+    base = wt.tqdm.tqdm
+
+    class ProgressTqdm(base):
+        def update(self, n=1):
+            shown = super().update(n)
+            cb = getattr(_progress_cb, 'fn', None)
+            if cb and self.total:
+                cb(self.n, self.total)
+            return shown
+
+    wt.tqdm = types.SimpleNamespace(tqdm=ProgressTqdm)
+    wt._listening_hooked = True
+
+_transcribe_gate = threading.Lock()   # de a una transcripción por vez (la GPU/CPU no rinde en paralelo)
+
+def _run_transcription(video_name, video_path, model_name, lang, job):
     try:
+        if not _transcribe_gate.acquire(blocking=False):
+            job.update(msg='En cola: se está transcribiendo otro video…')
+            _transcribe_gate.acquire()
+        try:
+            _transcribe_video(video_name, video_path, model_name, lang, job)
+        finally:
+            _transcribe_gate.release()
+    except Exception as e:
+        job.fail(str(e) or e.__class__.__name__)
+
+def _transcribe_video(video_name, video_path, model_name, lang, job):
+    try:
+        job.update(msg='Cargando el modelo de IA…')
         m = _load_whisper(model_name)
-        _jobs[job_key]['msg'] = 'Transcribiendo...'
-        result = m.transcribe(video_path, language=lang, task='transcribe',
-                              verbose=False, word_timestamps=True,
-                              condition_on_previous_text=False)
+        job.begin_phase('Preparando el audio…')
+        _hook_whisper_progress()
+
+        def on_progress(frames, total_frames):      # 1 cuadro = 10 ms de audio
+            job.update(progress=frames / total_frames, msg='Transcribiendo audio…',
+                       detail=f'{clock(frames / 100)} de {clock(total_frames / 100)}')
+        _progress_cb.fn = on_progress
+        try:
+            result = m.transcribe(video_path, language=lang, task='transcribe',
+                                  verbose=False, word_timestamps=True,
+                                  condition_on_previous_text=False)
+        finally:
+            _progress_cb.fn = None
         subs = []
         for i, seg in enumerate(result['segments']):
             text = seg['text'].strip()
@@ -54,12 +106,14 @@ def _run_transcription(video_name, video_path, model_name, lang):
             end   = words[-1]['end']   if words else seg['end']
             subs.append({'id': i, 'start': round(start, 2), 'end': round(end, 2), 'phrase': text})
         _save_subs(video_name, lang, subs)
-        _jobs[job_key] = {'status': 'done', 'subs': subs, 'msg': ''}
+        job.done(subs=subs)
     except Exception as e:
-        _jobs[job_key] = {'status': 'error', 'msg': str(e), 'subs': []}
+        job.fail(str(e) or e.__class__.__name__)
 
 # ── Config ────────────────────────────────────────────────────
-VIDEOS_DIR = r'D:\VideosIngles'
+# Se pueden cambiar con variables de entorno (útil para probar sin tocar los videos reales)
+VIDEOS_DIR = os.environ.get('LISTENING_VIDEOS_DIR', r'D:\VideosIngles')
+PORT       = int(os.environ.get('LISTENING_PORT', '8002'))
 SEGS_DIR   = os.path.join(VIDEOS_DIR, '.segments')
 SUBS_DIR   = os.path.join(VIDEOS_DIR, '.subtitles')
 
@@ -82,8 +136,11 @@ def _load_json(path):
     return []
 
 def _save_json(path, data):
-    with open(path, 'w', encoding='utf-8') as f:
+    # Escritura atómica: si el programa se corta a mitad de guardado no queda un JSON a medias
+    tmp = f'{path}.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, path)
 
 def _segs_path(name):
     return os.path.join(SEGS_DIR, _safe(name) + '.json')
@@ -126,14 +183,17 @@ def list_videos():
 
 @app.post('/api/upload')
 async def upload_video(file: UploadFile = File(...)):
-    dest = os.path.join(VIDEOS_DIR, file.filename)
+    name = os.path.basename((file.filename or '').replace(chr(92), '/'))      # nunca una ruta: solo el nombre del archivo
+    if os.path.splitext(name)[1].lower() not in VIDEO_EXTS:
+        return {'error': 'Formato no admitido. Usá .mp4, .mkv, .avi, .mov, .webm o .m4v'}
+    dest = os.path.join(VIDEOS_DIR, name)
     with open(dest, 'wb') as f:
         while True:
             chunk = await file.read(1024 * 1024)
             if not chunk:
                 break
             f.write(chunk)
-    return {'ok': True, 'name': file.filename}
+    return {'ok': True, 'name': name}
 
 
 @app.get('/api/segments/{video_name}')
@@ -209,7 +269,7 @@ def autosync_subs(video_name: str, lang: str = Query('en')):
     if not subs:
         return {'error': 'No hay subtítulos para sincronizar. Generá o importá primero.'}
     video_path = os.path.join(VIDEOS_DIR, video_name)
-    if not os.path.exists(video_path):
+    if os.path.basename(video_name) != video_name or not os.path.exists(video_path):
         return {'error': 'Video no encontrado'}
     import tempfile, subprocess
     srt_in  = os.path.join(tempfile.gettempdir(), f'sub_in_{lang}.srt')
@@ -246,38 +306,77 @@ def autosync_subs(video_name: str, lang: str = Query('en')):
             except: pass
 
 
-@app.post('/api/translate/{video_name}')
-def translate_to_es(video_name: str):
+# ── Traducción EN → ES ────────────────────────────────────────
+# Se traduce por lotes (ver translator.py). Si algo no se puede traducir se avisa con un
+# error y NO se guarda nada: antes se guardaba el texto en inglés como si fuera español.
+_tjobs = {}
+
+def _translate_subs(video_name, on_progress=None, on_status=None):
+    import translator
     subs_en = _load_subs(video_name, 'en')
     if not subs_en:
-        return {'error': 'Primero generá o importá subtítulos en inglés'}
+        raise translator.TranslationError('Primero generá o importá subtítulos en inglés')
+    translated = translator.translate_lines([s['phrase'] for s in subs_en],
+                                            on_progress=on_progress, on_status=on_status)
+    subs_es = [{**sub, 'phrase': t} for sub, t in zip(subs_en, translated)]
+    _save_subs(video_name, 'es', subs_es)
+    return subs_es
+
+def _run_translation(video_name, job):
+    def progress(done, total):
+        job.update(progress=(done / total) if total else 1.0, msg='Traduciendo…',
+                   detail=f'{done} de {total} frases' if total else '')
+    def status(msg):       # None = se retomó después de esperar a Google
+        job.update(msg=msg or 'Traduciendo…')
     try:
-        from deep_translator import GoogleTranslator
-        translator = GoogleTranslator(source='en', target='es')
-        subs_es = []
-        for sub in subs_en:
-            try:
-                translated = translator.translate(sub['phrase']) or sub['phrase']
-            except Exception:
-                translated = sub['phrase']
-            subs_es.append({**sub, 'phrase': translated})
-        _save_subs(video_name, 'es', subs_es)
-        return subs_es
-    except ImportError:
-        return {'error': 'Instalá deep-translator: pip install deep-translator'}
+        job.begin_phase('Preparando la traducción…')
+        subs_es = _translate_subs(video_name, progress, status)
+        job.done(subs=subs_es)
     except Exception as e:
-        return {'error': str(e)}
+        job.fail(str(e) or e.__class__.__name__)
+
+
+@app.post('/api/translate/start/{video_name}')
+def translate_start(video_name: str):
+    if not _load_subs(video_name, 'en'):
+        return {'error': 'Primero generá o importá subtítulos en inglés'}
+    current = _tjobs.get(video_name)
+    if current and current.status == 'running':
+        return {'status': 'running', 'msg': 'Ya traduciendo…'}
+    job = _tjobs[video_name] = JobState('Iniciando…')
+    threading.Thread(target=_run_translation, args=(video_name, job), daemon=True).start()
+    return {'status': 'started'}
+
+
+@app.get('/api/translate/status/{video_name}')
+def translate_status(video_name: str):
+    return snap(_tjobs.get(video_name))
+
+
+@app.post('/api/translate/{video_name}')
+def translate_to_es(video_name: str):
+    # Versión que espera hasta terminar (se conserva por compatibilidad; la interfaz usa /start + /status)
+    try:
+        return _translate_subs(video_name)
+    except Exception as e:
+        return {'error': str(e) or e.__class__.__name__}
 
 
 @app.post('/api/transcribe/start/{video_name}')
-def transcribe_start(video_name: str, model: str = Query('small'), lang: str = Query('en')):
+def transcribe_start(video_name: str, model: str = Query('small'), lang: str = Query('en'), force: bool = Query(False)):
     video_path = os.path.join(VIDEOS_DIR, video_name)
-    if not os.path.exists(video_path):
+    if os.path.basename(video_name) != video_name or not os.path.exists(video_path):
         return {'error': 'Video no encontrado'}
     job_key = f'{video_name}_{lang}'
-    if _jobs.get(job_key, {}).get('status') == 'running':
+    current = _jobs.get(job_key)
+    if current and current.status == 'running':
         return {'status': 'running', 'msg': 'Ya transcribiendo...'}
-    t = threading.Thread(target=_run_transcription, args=(video_name, video_path, model, lang), daemon=True)
+    # Si ya hay subtítulos no se vuelve a transcribir (pisaría las ediciones hechas a mano).
+    # Para regenerarlos hay que borrarlos primero (o pasar force=true).
+    if not force and _load_subs(video_name, lang):
+        return {'status': 'exists', 'msg': 'Este video ya tiene subtítulos generados. Borralos primero si querés generarlos de nuevo.'}
+    job = _jobs[job_key] = JobState('Iniciando…')
+    t = threading.Thread(target=_run_transcription, args=(video_name, video_path, model, lang, job), daemon=True)
     t.start()
     return {'status': 'started'}
 
@@ -285,61 +384,87 @@ def transcribe_start(video_name: str, model: str = Query('small'), lang: str = Q
 @app.get('/api/transcribe/status/{video_name}')
 def transcribe_status(video_name: str, lang: str = Query('en')):
     job_key = f'{video_name}_{lang}'
-    return _jobs.get(job_key, {'status': 'idle'})
+    return snap(_jobs.get(job_key))
 
 
-@app.get('/api/download-segment/{video_name}')
-def download_segment(
-    video_name: str,
-    start:  float = Query(0),
-    end:    float = Query(0),
-    repeat: int   = Query(1),
-    bg: BackgroundTasks = None
-):
-    video_path = os.path.join(VIDEOS_DIR, video_name)
-    if not os.path.exists(video_path):
-        return {'error': 'Video no encontrado'}
-    repeat = max(1, min(repeat, 30))
-    tmp = tempfile.mkdtemp()
+# (La descarga de fragmentos ahora es /api/export/segment: corte exacto, con vueltas, velocidades y subtítulos)
+
+
+# ── WebSocket: control remoto ─────────────────────────────
+
+class _WSManager:
+    def __init__(self):
+        self._clients: list[WebSocket] = []
+
+    async def connect(self, ws: WebSocket):
+        await ws.accept()
+        self._clients.append(ws)
+
+    def disconnect(self, ws: WebSocket):
+        if ws in self._clients:
+            self._clients.remove(ws)
+
+    async def broadcast(self, data: str, sender: WebSocket = None):
+        dead = []
+        for c in self._clients:
+            if c is sender:
+                continue
+            try:
+                await c.send_text(data)
+            except Exception:
+                dead.append(c)
+        for c in dead:
+            self.disconnect(c)
+
+_ws_manager = _WSManager()
+
+
+@app.websocket('/ws')
+async def ws_endpoint(websocket: WebSocket):
+    await _ws_manager.connect(websocket)
     try:
-        seg = os.path.join(tmp, 'seg.mp4')
-        subprocess.run([
-            'ffmpeg', '-y',
-            '-ss', str(start), '-to', str(end),
-            '-i', video_path,
-            '-c', 'copy', seg
-        ], capture_output=True, timeout=120, check=True)
+        while True:
+            data = await websocket.receive_text()
+            await _ws_manager.broadcast(data, sender=websocket)
+    except WebSocketDisconnect:
+        _ws_manager.disconnect(websocket)
 
-        if repeat > 1:
-            lst = os.path.join(tmp, 'list.txt')
-            with open(lst, 'w') as f:
-                for _ in range(repeat):
-                    f.write(f"file '{seg}'\n")
-            out = os.path.join(tmp, 'out.mp4')
-            subprocess.run([
-                'ffmpeg', '-y',
-                '-f', 'concat', '-safe', '0',
-                '-i', lst, '-c', 'copy', out
-            ], capture_output=True, timeout=180, check=True)
-        else:
-            out = seg
 
-        stem  = os.path.splitext(video_name)[0]
-        fname = f'{stem}_{int(start)}-{int(end)}x{repeat}.mp4'
+def _local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return 'localhost'
 
-        from starlette.background import BackgroundTask
-        return FileResponse(out, filename=fname, media_type='video/mp4',
-                            background=BackgroundTask(lambda: shutil.rmtree(tmp, ignore_errors=True)))
-    except subprocess.CalledProcessError as e:
-        shutil.rmtree(tmp, ignore_errors=True)
-        return {'error': 'FFmpeg: ' + (e.stderr or b'').decode()[:300]}
-    except Exception as e:
-        shutil.rmtree(tmp, ignore_errors=True)
-        return {'error': str(e)}
 
+@app.get('/api/server-info')
+def server_info():
+    return {'ip': _local_ip(), 'port': PORT}
+
+
+@app.get('/remote', response_class=HTMLResponse)
+def remote_page():
+    _dir = os.path.dirname(os.path.abspath(__file__))
+    html_path = os.path.join(_dir, 'remote.html')
+    with open(html_path, encoding='utf-8') as f:
+        return f.read()
+
+
+# ── Exportar videos con subtítulos (ver export_routes.py y subexport.py) ──
+import export_routes
+EXPORTS_DIR = export_routes.register(app, dict(videos_dir=VIDEOS_DIR, video_exts=VIDEO_EXTS, load_subs=_load_subs))
+
+import download_routes     # traer videos de YouTube (yt-dlp)
+download_routes.register(app, dict(videos_dir=VIDEOS_DIR))
+import vocab_routes        # Mis palabras: vocabulario guardado + repaso
+vocab_routes.register(app, dict(videos_dir=VIDEOS_DIR))
 
 app.mount('/videos', StaticFiles(directory=VIDEOS_DIR), name='videos')
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(app, host='0.0.0.0', port=8002)
+    uvicorn.run(app, host='0.0.0.0', port=PORT)

@@ -1,6 +1,12 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 import { StickerSelector } from './StickerSelector'
 import { ThemeDropdown } from './ThemeDropdown'
+import JobProgress from './JobProgress'
+import SubtitleStack, { contentRect } from './SubtitleStack'
+import ExportDialog from './ExportDialog'
+import WordPopup from './WordPopup'
+import { normWord, apiError, OFFLINE } from '../lib/vocab'
 import escobaImg from '../themes/escoba.png'
 import botonComic2Img from '../themes/botonComic2.png'
 import gothicImg from '../themes/gothic.png'
@@ -15,7 +21,8 @@ import bubblegumImg from '../themes/bubblegum.png'
 import cinemaImg from '../themes/cinema.png'
 import shadowImg from '../themes/shadow.png'
 import outlineImg from '../themes/outline.png'
-const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
+const SPEEDS = [0.5, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.25, 1.5, 2]
+const SPEEDS_COMPACT = SPEEDS.filter(s => s <= 1.5)   // barra de control y vueltas de cada fragmento
 
 const BUILTIN_STYLES = [
   { id: 'default',   label: 'Default',   img: defaultImg },
@@ -32,79 +39,6 @@ const BUILTIN_STYLES = [
   { id: 'shadow',    label: 'Shadow',    img: shadowImg },
   { id: 'outline',   label: 'Outline',   img: outlineImg },
 ]
-
-// ── Subtítulo arrastrable ──────────────────────────────────
-function DraggableSub({ text, baseClass, customStyleObj, fontSize, defaultX, defaultY, fixedOffsetPx = 0, offset, onDrag, onEdit, containerRef }) {
-  const [editing, setEditing] = useState(false)
-  const [editVal, setEditVal] = useState('')
-  const dragging = useRef(false)
-  const origin   = useRef(null)
-
-  function onPointerDown(e) {
-    if (!text || editing) return
-    e.preventDefault()
-    dragging.current = true
-    origin.current = { mx: e.clientX, my: e.clientY, ox: offset.x, oy: offset.y }
-    e.currentTarget.setPointerCapture(e.pointerId)
-  }
-  function onPointerMove(e) {
-    if (!dragging.current || !containerRef.current) return
-    const { offsetWidth: w, offsetHeight: h } = containerRef.current
-    onDrag({
-      x: origin.current.ox + (e.clientX - origin.current.mx) / w * 100,
-      y: origin.current.oy + (e.clientY - origin.current.my) / h * 100,
-    })
-  }
-  function onPointerUp() { dragging.current = false }
-
-  function onDoubleClick(e) {
-    if (!onEdit) return
-    e.stopPropagation()
-    setEditVal(text); setEditing(true)
-  }
-  function commitEdit() { onEdit(editVal); setEditing(false) }
-
-  const x = defaultX + offset.x
-  const y = defaultY + offset.y
-
-  const inlineStyle = {
-    position: 'absolute', left: `${x}%`,
-    top: fixedOffsetPx ? `calc(${y}% + ${fixedOffsetPx}px)` : `${y}%`,
-    transform: 'translate(-50%,-50%)',
-    fontSize,
-    cursor:       editing ? 'text' : (text ? 'grab' : 'default'),
-    userSelect:   'none', zIndex: 10,
-    opacity:      text ? 1 : 0,
-    pointerEvents: text ? 'auto' : 'none',
-    transition:   'opacity .15s',
-    maxWidth:     '92%', textAlign: 'center',
-    ...(customStyleObj || {}),
-  }
-
-  return (
-    <div
-      className={customStyleObj ? 'sub-overlay' : baseClass}
-      style={inlineStyle}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onDoubleClick={onDoubleClick}
-    >
-      {editing ? (
-        <input
-          className="sub-inline-input"
-          value={editVal}
-          onChange={e => setEditVal(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false) }}
-          onBlur={commitEdit}
-          autoFocus
-          style={{ fontSize }}
-          onClick={e => e.stopPropagation()}
-        />
-      ) : text}
-    </div>
-  )
-}
 
 // ── Sticker arrastrable con tiempo editable ──────────────────
 function DraggableSticker({ sticker, selected, onSelect, onUpdate, onRemove, containerRef }) {
@@ -228,84 +162,189 @@ const FLAG_COLORS = [
 // ── Barra de progreso con banderas ───────────────────────
 const FLAG_DRAG_THRESHOLD = 6 // px mínimos para considerar arrastre
 
-function SeekBar({ duration, currentTime, segments, markStart, onSeek, onEndFlag, onMoveFlag }) {
+const SeekBar = forwardRef(function SeekBar({ duration, currentTime, segments, markStart, seekMode = 'seek', activeIdx = null, onSeek, onEndFlag, onMoveFlag, onMoveBlock, onPlayBlock, onZoomChange }, ref) {
   const wrapRef     = useRef(null)
   const dragging    = useRef(false)
-  const flagPending = useRef(null) // { idx, type, startX } — esperando umbral
-  const flagDrag    = useRef(null) // { idx, type } — arrastre confirmado
+  const flagPending = useRef(null)
+  const flagDrag    = useRef(null)
   const [hover, setHover] = useState(null)
+  const zoomState   = useRef({ zoom: 1, offset: 0 })
+  const [zoomTick,  setZoomTick] = useState(0)
 
-  function pct(t) { return duration ? Math.min(100, (t / duration) * 100) : 0 }
+  const { zoom: zoomLevel, offset: viewOffset } = zoomState.current
+  const visibleDuration = duration ? duration / zoomLevel : 0
+
+  function pct(t) {
+    if (!duration || !visibleDuration) return 0
+    return Math.max(0, Math.min(100, ((t - viewOffset) / visibleDuration) * 100))
+  }
   function fmt(s) { const m = Math.floor(s / 60); return `${m}:${String(Math.floor(s % 60)).padStart(2, '0')}` }
   function timeAt(e) {
     if (!wrapRef.current || !duration) return 0
     const { left, width } = wrapRef.current.getBoundingClientRect()
-    return Math.max(0, Math.min(duration, ((e.clientX - left) / width) * duration))
+    const frac = Math.max(0, Math.min(1, (e.clientX - left) / width))
+    return viewOffset + frac * visibleDuration
   }
+
+  // Aplica un factor de zoom manteniendo fijo el instante ubicado en `frac`
+  // (0 = borde izquierdo del área visible, 1 = borde derecho, 0.5 = centro).
+  const zoomAtFrac = useCallback((factor, frac) => {
+    if (!duration) return
+    const { zoom, offset } = zoomState.current
+    const visDur = duration / zoom
+    const newZoom = Math.max(1, Math.min(30, zoom * factor))
+    const anchorTime = offset + frac * visDur
+    const newVisDur = duration / newZoom
+    let newOffset = anchorTime - frac * newVisDur
+    newOffset = Math.max(0, Math.min(Math.max(0, duration - newVisDur), newOffset))
+    zoomState.current = { zoom: newZoom, offset: newOffset }
+    setZoomTick(t => t + 1)
+  }, [duration])
+
+  useEffect(() => { onZoomChange?.(zoomLevel) }, [zoomTick]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useImperativeHandle(ref, () => ({
+    zoomIn:    () => zoomAtFrac(1.4, 0.5),
+    zoomOut:   () => zoomAtFrac(1 / 1.4, 0.5),
+    resetZoom: () => { zoomState.current = { zoom: 1, offset: 0 }; setZoomTick(t => t + 1) },
+  }), [zoomAtFrac])
+
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el || !duration) return
+    function handleWheel(e) {
+      e.preventDefault()
+      const rect = el.getBoundingClientRect()
+      const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+      const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3
+      zoomAtFrac(factor, frac)
+    }
+    el.addEventListener('wheel', handleWheel, { passive: false })
+    return () => el.removeEventListener('wheel', handleWheel)
+  }, [duration, zoomAtFrac])
+
+  const panState = useRef({ active: false, startX: 0, startOffset: 0 })
+  const PAN_THRESHOLD = 6
 
   return (
     <div className="seekbar" ref={wrapRef}
+      style={{ cursor: seekMode === 'pan' ? 'grab' : 'pointer' }}
       onPointerDown={e => {
         if (flagPending.current || flagDrag.current) return
         e.preventDefault()
-        dragging.current = true
         e.currentTarget.setPointerCapture(e.pointerId)
-        onSeek(timeAt(e))
+        panState.current = { active: false, startX: e.clientX, startOffset: zoomState.current.offset }
       }}
       onPointerMove={e => {
         const t  = timeAt(e)
         const rx = e.clientX - wrapRef.current.getBoundingClientRect().left
 
-        // Verificar si la bandera pendiente superó el umbral de arrastre
+        // Arrastre de banderas
         if (flagPending.current && !flagDrag.current) {
           const moved = Math.abs(e.clientX - flagPending.current.startX)
           if (moved >= FLAG_DRAG_THRESHOLD) {
             flagDrag.current = { idx: flagPending.current.idx, type: flagPending.current.type }
           }
         }
-
         if (flagDrag.current) {
-          onMoveFlag(flagDrag.current.idx, flagDrag.current.type, t)
+          if (flagDrag.current.type === 'move') {
+            const { idx, startT, origStart, origEnd } = flagPending.current
+            const delta = t - startT
+            onMoveBlock(idx, origStart + delta, origEnd + delta)
+          } else {
+            onMoveFlag(flagDrag.current.idx, flagDrag.current.type, t)
+          }
           setHover({ x: rx, label: fmt(t) })
           return
         }
+
+        // Pan del timeline — solo en modo lupa
+        if (seekMode === 'pan' && panState.current.startX !== undefined) {
+          const moved = e.clientX - panState.current.startX
+          if (!panState.current.active && Math.abs(moved) >= PAN_THRESHOLD) {
+            panState.current.active = true
+            wrapRef.current.style.cursor = 'grabbing'
+          }
+          if (panState.current.active && duration) {
+            const { width } = wrapRef.current.getBoundingClientRect()
+            const timeDelta = (moved / width) * visibleDuration
+            let newOffset = panState.current.startOffset - timeDelta
+            newOffset = Math.max(0, Math.min(duration - visibleDuration, newOffset))
+            zoomState.current = { ...zoomState.current, offset: newOffset }
+            setZoomTick(tk => tk + 1)
+          }
+        }
+
         const nearSeg = segments.find(s =>
           Math.abs(pct(s.start) - pct(t)) < 2 || Math.abs(pct(s.end) - pct(t)) < 2
         )
         setHover({ x: rx, label: nearSeg ? nearSeg.phrase : fmt(t) })
-        if (dragging.current) onSeek(t)
       }}
       onPointerUp={e => {
-        dragging.current = false
         if (flagDrag.current) {
-          onMoveFlag(flagDrag.current.idx, flagDrag.current.type, timeAt(e), true)
+          if (flagDrag.current.type === 'move') {
+            const { idx, startT, origStart, origEnd } = flagPending.current
+            const delta = timeAt(e) - startT
+            onMoveBlock(idx, origStart + delta, origEnd + delta, true)
+          } else {
+            onMoveFlag(flagDrag.current.idx, flagDrag.current.type, timeAt(e), true)
+          }
           flagDrag.current = null
           flagPending.current = null
         } else if (flagPending.current) {
-          // fue un clic simple sobre la bandera → seek normal
           const { idx, type } = flagPending.current
           if (type === 'start') onSeek(segments[idx].start)
-          else onEndFlag(segments[idx].end)
+          else if (type === 'end') onEndFlag(segments[idx].end)
+          else if (type === 'move') onSeek(timeAt(e)) // clic sin arrastre sobre un bloque = buscar ahí
           flagPending.current = null
+        } else if (seekMode === 'seek') {
+          onSeek(timeAt(e))
+        } else if (seekMode === 'pan' && !panState.current.active) {
+          onSeek(timeAt(e))
         }
+        panState.current = { active: false, startX: undefined, startOffset: 0 }
+        wrapRef.current.style.cursor = ''
       }}
       onPointerLeave={() => { setHover(null) }}
     >
       {/* Track (fondo gris) */}
       <div className="sb-track" />
-      {/* Fill de progreso (azul) */}
+      {/* Fill de progreso (azul) — indica posición del video, independiente del pan */}
       <div className="sb-fill" style={{ width: `${pct(currentTime)}%` }} />
       {/* Cabeza de reproducción */}
       <div className="sb-head" style={{ left: `${pct(currentTime)}%` }} />
 
-      {/* Banderas por fragmento */}
+      {/* Bloques por fragmento — franja de color de inicio a fin */}
       {segments.map((seg, idx) => {
-        const color = FLAG_COLORS[idx % FLAG_COLORS.length]
+        const color  = FLAG_COLORS[idx % FLAG_COLORS.length]
+        const left   = pct(seg.start)
+        const width  = Math.max(0.4, pct(seg.end) - pct(seg.start))
+        const isActive = activeIdx === idx
         return (
-          <span key={seg.id ?? idx}>
-            {/* Bandera de INICIO — arriba del track */}
-            <div className="sb-flag sb-flag-start sb-flag-draggable"
-              style={{ left: `${pct(seg.start)}%`, '--flag-color': color }}
+          <div key={seg.id ?? idx}
+            className={`sb-block${isActive ? ' sb-block-active' : ''}`}
+            style={{ left: `${left}%`, width: `${width}%`, '--flag-color': color }}
+            title={`${seg.phrase} — arrastrar para mover · doble clic para reproducir`}
+            onPointerDown={e => {
+              e.stopPropagation()
+              e.preventDefault()
+              flagPending.current = {
+                idx, type: 'move',
+                startX: e.clientX,
+                startT: timeAt(e),
+                origStart: seg.start,
+                origEnd: seg.end,
+              }
+              wrapRef.current.setPointerCapture(e.pointerId)
+            }}
+            onDoubleClick={e => { e.stopPropagation(); onPlayBlock?.(idx) }}
+          >
+            <div className="sb-block-fill" />
+            <span className="sb-block-num" style={{ background: color }}>{idx + 1}</span>
+
+            {/* Manija de INICIO */}
+            <div className="sb-handle sb-handle-start"
+              style={{ background: color, boxShadow: `0 0 4px ${color}` }}
               onPointerDown={e => {
                 e.stopPropagation()
                 e.preventDefault()
@@ -313,13 +352,9 @@ function SeekBar({ duration, currentTime, segments, markStart, onSeek, onEndFlag
                 wrapRef.current.setPointerCapture(e.pointerId)
               }}
               title={`⠿ Arrastrar inicio · ${seg.phrase}`}
-            >
-              <div className="sb-flag-label sb-flag-start-label" style={{ background: color }}>{idx + 1}▶</div>
-              <div className="sb-flag-pole sb-flag-start-pole" style={{ background: color }} />
-            </div>
-            {/* Bandera de FIN — abajo del track */}
-            <div className="sb-flag sb-flag-end sb-flag-draggable"
-              style={{ left: `${pct(seg.end)}%` }}
+            />
+            {/* Manija de FIN */}
+            <div className="sb-handle sb-handle-end"
               onPointerDown={e => {
                 e.stopPropagation()
                 e.preventDefault()
@@ -327,22 +362,19 @@ function SeekBar({ duration, currentTime, segments, markStart, onSeek, onEndFlag
                 wrapRef.current.setPointerCapture(e.pointerId)
               }}
               title={`⠿ Arrastrar fin · ${seg.phrase}`}
-            >
-              <div className="sb-flag-pole sb-flag-end-pole" />
-              <div className="sb-flag-label sb-flag-end-label">■{idx + 1}</div>
-            </div>
-          </span>
+            />
+          </div>
         )
       })}
 
       {/* Bandera temporal de inicio pendiente */}
       {markStart != null && duration > 0 && (
-        <div className="sb-flag sb-flag-start sb-mark-pending"
+        <div className="sb-mark-pending"
           style={{ left: `${pct(markStart)}%` }}
           title={`Inicio marcado: ${fmt(markStart)}`}
         >
-          <div className="sb-flag-label sb-mark-pending-label">[ ▶</div>
-          <div className="sb-flag-pole sb-mark-pending-pole" />
+          <div className="sb-mark-pending-label">[ ▶</div>
+          <div className="sb-mark-pending-pole" />
         </div>
       )}
 
@@ -351,9 +383,19 @@ function SeekBar({ duration, currentTime, segments, markStart, onSeek, onEndFlag
           left: Math.max(40, Math.min(hover.x, (wrapRef.current?.offsetWidth ?? 999) - 90))
         }}>{hover.label}</div>
       )}
+
+      {/* Indicador de zoom: muestra qué porción del timeline es visible */}
+      {zoomLevel > 1 && duration > 0 && (
+        <div className="sb-zoom-bar">
+          <div className="sb-zoom-range" style={{
+            left:  `${(viewOffset / duration) * 100}%`,
+            width: `${(visibleDuration / duration) * 100}%`,
+          }} />
+        </div>
+      )}
     </div>
   )
-}
+})
 
 // ── Schedule visual de vueltas ────────────────────────────
 function RepSchedule({ repConfig, activeRep = null }) {
@@ -378,6 +420,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   const videoWrap  = useRef(null)
   const srtEnInput = useRef(null)
   const srtEsInput = useRef(null)
+  const seekBarRef = useRef(null)
 
   const [segments,     setSegments]     = useState([])
   const [subsEn,       setSubsEn]       = useState([])
@@ -393,12 +436,23 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   const [videoDuration,     setVideoDuration]     = useState(0)
   const [playing,           setPlaying]           = useState(false)
   const [muted,             setMuted]             = useState(false)
+  const [seekMode,          setSeekMode]          = useState('seek') // 'seek' | 'pan'
+  const [zoomPct,           setZoomPct]           = useState(100)
   const [selectedStickerId, setSelectedStickerId] = useState(null)
   const [currentRepDisplay, setCurrentRepDisplay] = useState(0)
   const [activeSubOverride, setActiveSubOverride] = useState(null) // { en, es }
-  const [downloading,       setDownloading]       = useState(null)
+  const [exportReq,         setExportReq]         = useState(null) // { mode: 'video' | 'segment', idx, t, h }
   const currentRepRef  = useRef(0)
   const loopSeeking    = useRef(false)
+
+  // ── Mis palabras: tocar una palabra del subtítulo en inglés ──
+  const [vocab,      setVocab]      = useState([])     // palabras guardadas (las del subtítulo se marcan con subrayado punteado)
+  const [wordAnchor, setWordAnchor] = useState(null)   // palabra tocada: { word, rect, example }
+  const pausedByWord = useRef(false)                   // el video lo pausó la ventanita de la palabra: se retoma al cerrarla
+  useEffect(() => {
+    fetch('/api/vocab').then(r => (r.ok ? r.json() : null)).then(d => { if (Array.isArray(d?.words)) setVocab(d.words) }).catch(() => {})
+  }, [])
+  const savedWords = useMemo(() => new Set(vocab.map(c => c.word)), [vocab])
 
   // ── Plantilla global de vueltas ──
   const [template, setTemplate] = useState(() => {
@@ -414,10 +468,13 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   const [showEn,       setShowEn]       = useState(true)
   const [showEs,       setShowEs]       = useState(true)
   const [subStyle,     setSubStyle]     = useState('default')
-  const [subSize,      setSubSize]      = useState(1.1)
+  const [subSize,      setSubSize]      = useState(() => {   // tamaño de letra: se recuerda entre videos y recargas (y lo usa Exportar)
+    try { const v = parseFloat(localStorage.getItem('sub_size')); return v >= 0.7 && v <= 3 ? v : 1.1 } catch { return 1.1 }
+  })
   const [subOffset,    setSubOffset]    = useState({ x: 0, y: 0 })
   const [subShift,     setSubShift]     = useState(0)   // offset de timing en segundos
   const rewindRef = useRef(rewindSecs)
+  useEffect(() => { try { localStorage.setItem('sub_size', String(subSize)) } catch { /* sin almacenamiento */ } }, [subSize])
 
   const [markStart,    setMarkStart]    = useState(null)
   const [marking,      setMarking]      = useState(false)
@@ -431,6 +488,11 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   const [transEn,      setTransEn]      = useState(false)
   const [transMsgEn,   setTransMsgEn]   = useState('')
   const [translating,  setTranslating]  = useState(false)
+  const [transMsgEs,   setTransMsgEs]   = useState('')
+  const [jobs,         setJobs]         = useState({ en: null, es: null }) // estado detallado de los trabajos en curso (relojito)
+  const [subsEnReady,  setSubsEnReady]  = useState(false) // ya se consultó si hay subs en inglés guardados
+  const [autoFetch,    setAutoFetch]    = useState(() => { try { return localStorage.getItem('auto_fetch_subs') !== '0' } catch { return true } })
+  const pollRef = useRef({ en: null, es: null })          // sondeos activos de transcripción / traducción
 
   const [editSubKey,   setEditSubKey]   = useState(null)
   const [editSubVal,   setEditSubVal]   = useState('')
@@ -440,6 +502,15 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   const [videoMaxH,    setVideoMaxH]    = useState(42)  // vh
   const [rightWidth,   setRightWidth]   = useState(340) // px
   const resizeDrag = useRef(null)
+
+  // ── Control remoto ──
+  const wsRef              = useRef(null)
+  const segmentsRef        = useRef([])
+  const activeRef          = useRef(null)
+  const activeSegOverride  = useRef(null) // { ...seg } con repeat/repConfig temporales
+  const [remoteUrl,        setRemoteUrl]   = useState(null)
+  const [showRemote,       setShowRemote]  = useState(false)
+  const [wsConnected,      setWsConnected] = useState(false)
 
   useEffect(() => {
     const onMove = e => {
@@ -479,9 +550,119 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
       setSegments(data)
       setCollapsed(new Set(data.map((_, i) => i)))
     })
-    fetch(`/api/subtitles/${encodeURIComponent(video.name)}?lang=en`).then(r => r.json()).then(d => setSubsEn(Array.isArray(d) ? d : []))
-    fetch(`/api/subtitles/${encodeURIComponent(video.name)}?lang=es`).then(r => r.json()).then(d => setSubsEs(Array.isArray(d) ? d : []))
-  }, [video.name])
+    const enc = encodeURIComponent(video.name)
+    // Subtítulos en inglés: se cargan; si el programa los está generando se retoma el seguimiento (p. ej. se recargó
+    // la página); y si no hay ninguno se traen solos al entrar (una vez por video, y se puede desactivar)
+    ;(async () => {
+      let subs = []
+      try { const d = await fetch(`/api/subtitles/${enc}?lang=en`).then(r => r.json()); if (Array.isArray(d)) subs = d } catch { /* sin conexión */ }
+      setSubsEn(subs); setSubsEnReady(true)
+      let job
+      try { job = await fetch(`/api/transcribe/status/${enc}?lang=en`).then(r => r.json()) } catch { return }
+      if (job.status === 'running') watchTranscribe()
+      else if (subs.length === 0 && autoFetchEnabled() && !autoFetchTried()) startTranscribe('en', { auto: true })
+    })()
+    fetch(`/api/subtitles/${enc}?lang=es`).then(r => r.json()).then(d => setSubsEs(Array.isArray(d) ? d : []))
+    fetch(`/api/translate/status/${enc}`).then(r => r.json()).then(d => {
+      if (d.status === 'running') watchJob('es', `/api/translate/status/${enc}`, { setBusy: setTranslating, setMsg: setTransMsgEs, onDone: setSubsEs })
+    }).catch(() => {})
+  }, [video.name]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mantener refs de segments y active actualizados para los handlers del WS
+  useEffect(() => { segmentsRef.current = segments }, [segments])
+  useEffect(() => { activeRef.current = active }, [active])
+
+  // ── WebSocket control remoto ──
+  useEffect(() => {
+    fetch('/api/server-info').then(r => r.json()).then(info => {
+      setRemoteUrl(`http://${info.ip}:${info.port}/remote`)
+    }).catch(() => {})
+
+    function connect() {
+      // Misma dirección de la página (el proxy de Vite reenvía /ws al backend): sirve con cualquier puerto
+      const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`)
+      wsRef.current = ws
+
+      ws.onopen = () => {
+        setWsConnected(true)
+        // Enviar estado actual al celular que acaba de conectarse
+        ws.send(JSON.stringify({
+          type: 'state',
+          video: video.name,
+          segments,
+          activeIdx: active,
+        }))
+      }
+      ws.onclose = () => {
+        setWsConnected(false)
+        setTimeout(connect, 3000)
+      }
+      ws.onerror = () => ws.close()
+
+      ws.onmessage = e => {
+        let msg
+        try { msg = JSON.parse(e.data) } catch { return }
+
+        if (msg.type === 'request_state') {
+          ws.send(JSON.stringify({
+            type: 'state',
+            video: video.name,
+            segments: segmentsRef.current,
+            activeIdx: activeRef.current,
+          }))
+        } else if (msg.type === 'remote_play') {
+          const idx = msg.idx
+          const seg = segmentsRef.current[idx]
+          if (!seg || !videoRef.current) return
+          const repeatCount = Math.max(1, msg.repeat ?? seg.repeat ?? 1)
+          // Usar el repConfig enviado por el celular si coincide en longitud; si no, construir desde el segmento
+          let repConfig
+          if (Array.isArray(msg.repConfig) && msg.repConfig.length === repeatCount) {
+            repConfig = msg.repConfig
+          } else {
+            const baseRc = seg.repConfig ?? [{ speed: 1, en: true, es: false }]
+            repConfig = Array.from({ length: repeatCount },
+              (_, j) => baseRc[j] ?? { ...baseRc[baseRc.length - 1] })
+          }
+          // Guardar override temporal — no modifica el estado permanente
+          activeSegOverride.current = { ...seg, repeat: repeatCount, repConfig }
+          currentRepRef.current = 0
+          loopSeeking.current = false
+          setCurrentRepDisplay(0)
+          const rc0 = repConfig[0]
+          setActiveSubOverride({ en: rc0.en ?? true, es: rc0.es ?? false })
+          if (seg.subStyle) setSubStyle(seg.subStyle)
+          setActive(idx); setLooping(true)
+          videoRef.current.playbackRate = rc0.speed ?? 1
+          videoRef.current.currentTime = seg.start
+          videoRef.current.play()
+          ws.send(JSON.stringify({ type: 'playing', idx }))
+        } else if (msg.type === 'remote_stop') {
+          activeSegOverride.current = null
+          setLooping(false); setActive(null)
+          currentRepRef.current = 0; setCurrentRepDisplay(0)
+          setActiveSubOverride(null)
+          if (videoRef.current) { videoRef.current.playbackRate = 1; videoRef.current.pause() }
+          ws.send(JSON.stringify({ type: 'stopped' }))
+        }
+      }
+    }
+
+    connect()
+    return () => { wsRef.current?.close() }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Broadcast estado cuando cambian los segments o el fragmento activo
+  useEffect(() => {
+    const ws = wsRef.current
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
+    ws.send(JSON.stringify({
+      type: 'state',
+      video: video.name,
+      segments,
+      activeIdx: active,
+    }))
+  }, [segments, active, video.name])
 
   // Persistir stickers (excluir blob: URLs que son temporales del navegador)
   useEffect(() => {
@@ -503,7 +684,9 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       const v = videoRef.current
       if (!v) return
-      if (e.code === 'Space') {
+      if (e.key === 't') { e.preventDefault(); setSeekMode('pan') }
+      else if (e.key === 'r') { e.preventDefault(); setSeekMode('seek') }
+      else if (e.code === 'Space') {
         e.preventDefault()
         v.paused ? v.play() : v.pause()
       } else if (e.code === 'ArrowLeft') {
@@ -532,6 +715,43 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
     const v = videoRef.current; if (!v) return
     v.paused ? v.play() : v.pause()
   }
+
+  function closeWord() {
+    setWordAnchor(null)
+    if (pausedByWord.current) { pausedByWord.current = false; videoRef.current?.play().catch(() => {}) }
+  }
+  function openWord(word, el) {
+    if (!word) { closeWord(); return }
+    const box = videoWrap.current, v = videoRef.current
+    if (!box || !el) return
+    const t = v?.currentTime ?? 0
+    const at = list => list.find(s => t >= s.start + subShift && t <= s.end + subShift)
+    const en = at(subsEn), es = at(subsEs)
+    const r = el.getBoundingClientRect(), b = box.getBoundingClientRect()
+    if (v && !v.paused) { v.pause(); pausedByWord.current = true }
+    const start = Math.max(0, (en ? en.start : t - 2) + subShift)
+    setWordAnchor({
+      word,
+      rect: { l: r.left - b.left - box.clientLeft, t: r.top - b.top - box.clientTop, w: r.width, h: r.height },
+      // La frase donde se escuchó: el repaso vuelve a reproducir justo esa parte del video
+      example: { video: video.name, start, end: Math.max((en ? en.end : t + 2) + subShift, start + 0.5), en: en ? en.phrase : currentEn, es: es ? es.phrase : '' },
+    })
+  }
+  async function saveWord(payload) {
+    let r
+    try { r = await fetch('/api/vocab', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }) }
+    catch { throw new Error(OFFLINE) }
+    if (!r.ok) throw new Error(await apiError(r))
+    const { card } = await r.json()
+    setVocab(list => [card, ...list.filter(c => c.id !== card.id)])
+  }
+  async function removeWord(card) {
+    let r
+    try { r = await fetch(`/api/vocab/${card.id}`, { method: 'DELETE' }) }
+    catch { throw new Error(OFFLINE) }
+    if (!r.ok && r.status !== 404) throw new Error(await apiError(r))
+    setVocab(list => list.filter(c => c.id !== card.id))
+  }
   function toggleMute() {
     const v = videoRef.current; if (!v) return
     v.muted = !v.muted; setMuted(v.muted)
@@ -554,7 +774,8 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
       setCurrentEs(s ? s.phrase : '')
     } else setCurrentEs('')
     if (looping && active !== null && segments[active]) {
-      const seg = segments[active]
+      // Usa el override temporal del control remoto si existe, si no usa el segmento normal
+      const seg = activeSegOverride.current ?? segments[active]
       // Reset guard cuando el video ya está antes del fin (seek completado)
       if (t < seg.end - 0.3) loopSeeking.current = false
       if (t >= seg.end && !loopSeeking.current) {
@@ -562,11 +783,15 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
         const totalReps = seg.repeat ?? 1
         const nextRep   = currentRepRef.current + 1
         if (nextRep >= totalReps) {
-          // Terminaron todas las repeticiones — loopSeeking queda en true hasta el próximo playSegment
+          // Terminaron todas las repeticiones
+          activeSegOverride.current = null
           setLooping(false); setActive(null)
           currentRepRef.current = 0; setCurrentRepDisplay(0)
           setActiveSubOverride(null)
           if (videoRef.current) { videoRef.current.playbackRate = 1; videoRef.current.pause() }
+          // Notificar al celular que terminó
+          const ws = wsRef.current
+          if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'stopped' }))
         } else {
           currentRepRef.current = nextRep
           setCurrentRepDisplay(nextRep)
@@ -596,6 +821,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
 
   function playSegment(idx) {
     const seg = segments[idx]; if (!seg || !videoRef.current) return
+    activeSegOverride.current = null
     currentRepRef.current = 0
     loopSeeking.current = false
     setCurrentRepDisplay(0)
@@ -612,6 +838,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
     else videoRef.current.pause()
   }
   function stopLoop() {
+    activeSegOverride.current = null
     setLooping(false); setActive(null)
     currentRepRef.current = 0; setCurrentRepDisplay(0)
     setActiveSubOverride(null)
@@ -638,7 +865,9 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
       subStyle: subStyle
     }
     const updated = [...segments, newSeg].sort((a, b) => a.start - b.start)
-    setSegments(updated); persistSegs(updated)
+    setSegments(updated)
+    setCollapsed(new Set(updated.map((_, i) => i)))
+    persistSegs(updated)
     setMarkStart(null); setMarking(false); setNewPhrase(''); flashSaved()
   }
   function updateSegConfig(idx, changes) {
@@ -665,21 +894,12 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
     )
     updateSegConfig(segIdx, { repConfig })
   }
-  async function downloadSegment(seg) {
-    setDownloading(seg.id)
-    try {
-      const params = new URLSearchParams({
-        start: seg.start, end: seg.end, repeat: seg.repeat ?? 1
-      })
-      const res = await fetch(`/api/download-segment/${encodeURIComponent(video.name)}?${params}`)
-      if (!res.ok) { const d = await res.json(); alert('Error: ' + d.error); return }
-      const blob = await res.blob()
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href = url; a.download = `${seg.phrase}.mp4`; a.click()
-      URL.revokeObjectURL(url)
-    } catch(e) { alert('Error: ' + e.message) }
-    finally { setDownloading(null) }
+  // Abre el diálogo para guardar el video entero o un fragmento con sus subtítulos
+  function openExport(mode, idx = null) {
+    videoRef.current?.pause()
+    const wrap = videoWrap.current
+    const c = wrap ? contentRect(wrap, videoRef.current) : null     // la imagen del video dentro del contenedor (sin barras negras)
+    setExportReq({ mode, idx, t: videoRef.current?.currentTime ?? 0, h: c?.h ?? 400, content: c, wrapW: wrap?.clientWidth ?? 0, wrapH: wrap?.clientHeight ?? 0 })
   }
   function moveFlag(idx, type, time, persist = false) {
     const t = Math.round(time * 100) / 100
@@ -689,6 +909,19 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
         if (type === 'start') return { ...s, start: Math.min(t, s.end - 0.1) }
         return { ...s, end: Math.max(t, s.start + 0.1) }
       })
+      if (persist) persistSegs(updated)
+      return updated
+    })
+  }
+  function moveBlock(idx, newStart, newEnd, persist = false) {
+    setSegments(prev => {
+      const seg = prev[idx]; if (!seg) return prev
+      let s = newStart, e = newEnd
+      if (s < 0) { e += -s; s = 0 }
+      if (videoDuration && e > videoDuration) { const over = e - videoDuration; s -= over; e = videoDuration }
+      s = Math.max(0, Math.round(s * 100) / 100)
+      e = Math.round(e * 100) / 100
+      const updated = prev.map((s2, i) => i === idx ? { ...s2, start: s, end: e } : s2)
       if (persist) persistSegs(updated)
       return updated
     })
@@ -758,21 +991,87 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   }
 
   
-  // ── Transcripción ──
-  function startTranscribe(lang) {
+  // ── Transcripción y traducción: trabajos que corren en el programa (backend) ──
+  function stopPoll(key) { clearInterval(pollRef.current[key]); pollRef.current[key] = null }
+  useEffect(() => () => { stopPoll('en'); stopPoll('es') }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sondea el estado de un trabajo hasta que termina (listo o con error)
+  function watchJob(key, url, { setBusy, setMsg, onDone, onEnd }) {
+    stopPoll(key)
+    setBusy(true)
+    const finish = () => { stopPoll(key); setBusy(false); setJobs(j => ({ ...j, [key]: null })) }
+    const tick = async () => {
+      try {
+        const data = await fetch(url).then(r => r.json())
+        if (data.status === 'done') {
+          finish(); setMsg(''); onDone(Array.isArray(data.subs) ? data.subs : []); flashSaved(); onEnd?.()
+        } else if (data.status === 'error') {
+          finish(); setMsg('Error: ' + data.msg); onEnd?.()
+        } else if (data.status === 'running') {
+          setMsg(data.msg || 'Procesando…')
+          setJobs(j => ({ ...j, [key]: data }))      // alimenta el relojito (porcentaje, tiempo que falta…)
+        } else {   // 'idle' o respuesta rara: el programa se reinició y perdió el trabajo
+          finish(); setMsg('Error: se perdió el trabajo (¿se reinició el programa?). Probá de nuevo.')
+        }
+      } catch {
+        finish(); setMsg('Error: se perdió la conexión con el programa.')
+      }
+    }
+    pollRef.current[key] = setInterval(tick, 1000)
+    tick()
+  }
+
+  function startErrorText(res) {
+    if (res?.detail === 'Not Found') return 'Error: falta reiniciar el programa (iniciar.bat) para activar esta función.'
+    return 'Error: ' + (res?.error || res?.detail || 'no se pudo iniciar.')
+  }
+
+  // Traer solos los subtítulos al abrir un video sin subtítulos: se intenta una sola vez por video
+  // (si falló o el video no tiene voz, no se repite; queda el botón Auto) y se puede desactivar
+  const autoTriedKey = `autosubs_tried:${video.name}`
+  function autoFetchEnabled() { try { return localStorage.getItem('auto_fetch_subs') !== '0' } catch { return true } }
+  function autoFetchTried()   { try { return localStorage.getItem(autoTriedKey) === '1' } catch { return false } }
+  function markAutoFetchTried() { try { localStorage.setItem(autoTriedKey, '1') } catch { /* sin almacenamiento */ } }
+  function toggleAutoFetch(on) {
+    setAutoFetch(on)
+    try { localStorage.setItem('auto_fetch_subs', on ? '1' : '0') } catch { /* sin almacenamiento */ }
+  }
+
+  function watchTranscribe() {
+    watchJob('en', `/api/transcribe/status/${encodeURIComponent(video.name)}?lang=en`,
+      { setBusy: setTransEn, setMsg: setTransMsgEn, onDone: setSubsEn, onEnd: markAutoFetchTried })
+  }
+
+  // opts.force: volver a traer aunque ya haya subtítulos (los actuales se conservan hasta que termine bien)
+  // opts.auto:  lo disparó la apertura del video, no el botón
+  async function startTranscribe(lang, { force = false, auto = false } = {}) {
     const setTrans = lang === 'en' ? setTransEn   : () => {}
     const setMsg   = lang === 'en' ? setTransMsgEn : () => {}
     const setSubs  = lang === 'en' ? setSubsEn    : setSubsEs
-    setTrans(true); setMsg('Iniciando...')
-    fetch(`/api/transcribe/start/${encodeURIComponent(video.name)}?model=small&lang=${lang}`, { method: 'POST' })
-    const poll = setInterval(async () => {
-      try {
-        const data = await fetch(`/api/transcribe/status/${encodeURIComponent(video.name)}?lang=${lang}`).then(r => r.json())
-        if (data.status === 'done')        { clearInterval(poll); setSubs(data.subs); setTrans(false); setMsg(''); flashSaved() }
-        else if (data.status === 'error')  { clearInterval(poll); setMsg('Error: ' + data.msg); setTrans(false) }
-        else setMsg(data.msg || 'Procesando...')
-      } catch { clearInterval(poll); setTrans(false) }
-    }, 2000)
+    // Si ya están los subtítulos no se vuelven a pedir: se pisarían las ediciones hechas a mano
+    if (!force && (lang === 'en' ? subsEn : subsEs).length > 0) return
+    const enc = encodeURIComponent(video.name)
+    setTrans(true); setMsg(auto ? 'Trayendo los subtítulos automáticamente…' : 'Iniciando…')
+    try {
+      const res = await fetch(`/api/transcribe/start/${enc}?model=small&lang=${lang}${force ? '&force=true' : ''}`, { method: 'POST' }).then(r => r.json())
+      if (res.status === 'exists') {   // ya estaban generados (p. ej. desde otra pestaña): se cargan
+        const d = await fetch(`/api/subtitles/${enc}?lang=${lang}`).then(r => r.json())
+        setSubs(Array.isArray(d) ? d : []); setTrans(false); setMsg('')
+        return
+      }
+      if (res.status !== 'started' && res.status !== 'running') { setTrans(false); setMsg(startErrorText(res)); return }
+    } catch {
+      setTrans(false); setMsg('Error: no se pudo contactar con el programa.')
+      return
+    }
+    watchJob(lang, `/api/transcribe/status/${enc}?lang=${lang}`, { setBusy: setTrans, setMsg, onDone: setSubs, onEnd: markAutoFetchTried })
+  }
+
+  // Vuelve a traer los subtítulos en inglés (con confirmación): se reemplazan solo si la nueva transcripción termina bien
+  function redoSubsEn() {
+    if (transEn) return
+    if (!window.confirm(`Ya tenés ${subsEn.length} subtítulos en inglés.\n\nSi los volvés a traer se reemplazan por una transcripción nueva (se pierden los cambios que hayas hecho a mano).\n\n¿Seguir?`)) return
+    startTranscribe('en', { force: true })
   }
 
   const [syncing, setSyncing] = useState({ en: false, es: false })
@@ -789,13 +1088,17 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   }
 
   async function translateToEs() {
-    setTranslating(true)
+    if (translating) return
+    const enc = encodeURIComponent(video.name)
+    setTranslating(true); setTransMsgEs('Iniciando…')
     try {
-      const data = await fetch(`/api/translate/${encodeURIComponent(video.name)}`, { method: 'POST' }).then(r => r.json())
-      if (data.error) { alert('Error: ' + data.error); return }
-      setSubsEs(Array.isArray(data) ? data : [])
-      flashSaved()
-    } finally { setTranslating(false) }
+      const res = await fetch(`/api/translate/start/${enc}`, { method: 'POST' }).then(r => r.json())
+      if (res.status !== 'started' && res.status !== 'running') { setTranslating(false); setTransMsgEs(startErrorText(res)); return }
+    } catch {
+      setTranslating(false); setTransMsgEs('Error: no se pudo contactar con el programa.')
+      return
+    }
+    watchJob('es', `/api/translate/status/${enc}`, { setBusy: setTranslating, setMsg: setTransMsgEs, onDone: setSubsEs })
   }
 
   async function importSrt(e, lang) {
@@ -811,7 +1114,6 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   function fmt(s) { const m = Math.floor(s / 60); return `${m}:${(s % 60).toFixed(1).padStart(4, '0')}` }
 
   const builtinClass   = `sub-overlay sub-${subStyle}`
-  const customStyleObj = null
 
   return (
     <div className="player-shell">
@@ -833,8 +1135,42 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
             onClick={() => setVideoSize(s => (s + 1) % 3)}>
             {VIDEO_SIZE_LABELS[videoSize]}
           </button>
+          <button
+            className={`vcb-btn remote-btn ${wsConnected ? 'remote-connected' : ''}`}
+            title="Control remoto desde el celular"
+            onClick={() => setShowRemote(v => !v)}
+          >
+            📱 {wsConnected ? '●' : '○'}
+          </button>
+          <button className="vcb-btn export-btn" title="Guardar el video con los subtítulos puestos" onClick={() => openExport('video')}>
+            💾 Exportar
+          </button>
           <ThemeDropdown theme={theme} onChange={onThemeChange} />
         </div>
+
+        {showRemote && (
+          <div className="remote-panel">
+            <div className="remote-panel-title">
+              📱 Control desde el celular
+              <span className={`remote-panel-status ${wsConnected ? 'ws-on' : 'ws-off'}`}>
+                {wsConnected ? '● Conectado' : '○ Sin conexión'}
+              </span>
+            </div>
+            <div className="remote-panel-body">
+              {remoteUrl ? (
+                <>
+                  <div className="remote-qr-wrap">
+                    <QRCodeSVG value={remoteUrl} size={160} bgColor="#ffffff" fgColor="#0f1117" level="M" />
+                  </div>
+                  <p className="remote-hint">Escaneá con el celular <strong>(misma red WiFi)</strong></p>
+                  <div className="remote-url-box">{remoteUrl}</div>
+                </>
+              ) : (
+                <p className="remote-hint">Cargando…</p>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="video-wrap" ref={videoWrap}
           style={{ '--video-max-h': videoMaxH + 'vh' }}
@@ -842,6 +1178,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
             setSelectedStickerId(null)
             // solo clic directo sobre el wrap (no sobre stickers ni subs)
             if (e.target === videoWrap.current || e.target === videoRef.current) {
+              if (wordAnchor) { closeWord(); return }     // un clic afuera cierra la ventanita de la palabra (y sigue el video)
               const v = videoRef.current; if (!v) return
               if (v.paused) { v.play(); setClickFlash('play') }
               else          { v.pause(); setClickFlash('pause') }
@@ -873,26 +1210,27 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
               onRemove={() => setStickers(prev => prev.filter(sk => sk.id !== s.id))}
             />
           ))}
-          <DraggableSub
-            text={showEn ? currentEn : ''}
-            baseClass={builtinClass}
-            customStyleObj={customStyleObj}
+          {/* Subtítulos: un solo bloque (inglés arriba, español abajo) que se acomoda solo dentro del video */}
+          <SubtitleStack
+            en={showEn ? currentEn : ''}
+            es={showEs ? currentEs : ''}
+            enClass={builtinClass}
+            esClass={`${builtinClass} sub-es`}
             fontSize={`${subSize}rem`}
-            defaultX={50} defaultY={74}
+            defaultX={50} defaultY={70}
             offset={subOffset} onDrag={setSubOffset}
-            onEdit={t => editSubOverlay('en', t)}
-            containerRef={videoWrap}
+            onEdit={editSubOverlay}
+            onWord={openWord} savedWords={savedWords}
+            containerRef={videoWrap} videoRef={videoRef}
           />
-          <DraggableSub
-            text={showEs ? currentEs : ''}
-            baseClass={`${builtinClass} sub-es`}
-            customStyleObj={customStyleObj}
-            fontSize={`${subSize}rem`}
-            defaultX={50} defaultY={74} fixedOffsetPx={46}
-            offset={subOffset} onDrag={setSubOffset}
-            onEdit={t => editSubOverlay('es', t)}
-            containerRef={videoWrap}
-          />
+          {wordAnchor && (
+            <WordPopup
+              key={`${wordAnchor.word}@${wordAnchor.example.start}`}
+              anchor={wordAnchor} boxRef={videoWrap}
+              card={vocab.find(c => c.word === normWord(wordAnchor.word))}
+              onSave={saveWord} onRemove={removeWord} onClose={closeWord}
+            />
+          )}
           <div className="resize-handle-v"
             onMouseDown={e => {
               e.preventDefault()
@@ -908,21 +1246,58 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
             {playing ? '⏸' : '▶'}
           </button>
           <span className="vcb-time">{fmtT(videoTime)}</span>
+          <div className="seekmode-btns">
+            <button
+              className={`seekmode-btn ${seekMode === 'seek' ? 'seekmode-on' : ''}`}
+              onClick={() => setSeekMode('seek')}
+              title="Modo puntero — clic para ir a escena (R)">
+              👆
+            </button>
+            <button
+              className={`seekmode-btn ${seekMode === 'pan' ? 'seekmode-on' : ''}`}
+              onClick={() => setSeekMode('pan')}
+              title="Modo lupa — arrastrar para moverse, scroll para zoom (T)">
+              🔍
+            </button>
+          </div>
           <SeekBar
+            ref={seekBarRef}
             duration={videoDuration}
             currentTime={videoTime}
             segments={segments}
             markStart={markStart}
+            seekMode={seekMode}
+            activeIdx={active}
             onSeek={t => { if (videoRef.current) videoRef.current.currentTime = t; stopLoop() }}
             onEndFlag={t => {
               if (videoRef.current) { videoRef.current.currentTime = t; videoRef.current.pause() }
               stopLoop()
             }}
             onMoveFlag={moveFlag}
+            onMoveBlock={moveBlock}
+            onPlayBlock={playSegment}
+            onZoomChange={z => setZoomPct(Math.round(z * 100))}
           />
+          <div className="zoom-btns">
+            <button className="seekmode-btn" onClick={() => seekBarRef.current?.zoomOut()} title="Alejar zoom">－</button>
+            <span className="zoom-pct">{zoomPct}%</span>
+            <button className="seekmode-btn" onClick={() => seekBarRef.current?.zoomIn()} title="Acercar zoom">＋</button>
+            {zoomPct > 100 && (
+              <button className="seekmode-btn zoom-reset-btn" onClick={() => seekBarRef.current?.resetZoom()} title="Restablecer zoom">⤢</button>
+            )}
+          </div>
           <span className="vcb-time">{fmtT(videoDuration)}</span>
+          <div className="vcb-speed-group">
+            {SPEEDS_COMPACT.map(s => (
+              <button key={s} className={`vcb-speed-btn ${speed === s ? 'active' : ''}`} onClick={() => setSpeed(s)}>{s}x</button>
+            ))}
+          </div>
           <button className="vcb-btn" onClick={toggleMute}>{muted ? '🔇' : '🔊'}</button>
-          <button className="vcb-btn" onClick={() => videoRef.current?.requestFullscreen()}>⛶</button>
+          {/* Pantalla completa del contenedor (no solo del <video>) para que se vean los subtítulos y los stickers */}
+          <button className="vcb-btn" title="Pantalla completa" onClick={() => {
+            if (document.fullscreenElement) document.exitFullscreen()
+            else videoWrap.current?.requestFullscreen()
+          }}>⛶</button>
         </div>
 
         <div className="player-left-scroll">
@@ -1009,14 +1384,26 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
           <div className="trans-col">
             <div className="trans-label">🇺🇸 Inglés</div>
             <div className="trans-btns">
-              <button className={`auto-btn ${transEn ? 'auto-busy' : ''}`} onClick={() => startTranscribe('en')} disabled={transEn}>
-                {transEn ? '⏳' : '✨'} Auto
+              <button className={`auto-btn ${transEn ? 'auto-busy' : ''} ${subsEn.length > 0 ? 'auto-done' : ''}`}
+                onClick={() => startTranscribe('en')}
+                disabled={transEn || !subsEnReady || subsEn.length > 0}
+                title={subsEn.length > 0
+                  ? `Ya están los subtítulos en inglés (${subsEn.length}). Si querés hacerlos de nuevo, usá ↻ Volver a traer.`
+                  : 'Traer los subtítulos en inglés automáticamente'}>
+                {transEn ? '⏳ Auto' : subsEn.length > 0 ? '✓ Ya traídos' : '✨ Auto'}
               </button>
               <button className="srt-btn" onClick={() => srtEnInput.current.click()}>📄 SRT</button>
               <input ref={srtEnInput} type="file" accept=".srt" style={{ display: 'none' }} onChange={e => importSrt(e, 'en')} />
               {subsEn.length > 0 && !transEn && <span className="subs-badge">{subsEn.length} subs</span>}
+              {subsEn.length > 0 && !transEn && (
+                <button className="srt-btn" onClick={redoSubsEn} title="Volver a traer los subtítulos en inglés (reemplaza los actuales)">↻ Volver a traer</button>
+              )}
             </div>
-            {transEn && transMsgEn && <div className="trans-status">⏳ {transMsgEn}</div>}
+            <label className="auto-fetch-toggle" title="Al abrir un video que no tiene subtítulos en inglés, se traen solos (una vez por video)">
+              <input type="checkbox" checked={autoFetch} onChange={e => toggleAutoFetch(e.target.checked)} /> Traer solos al abrir un video sin subtítulos
+            </label>
+            {transEn && <JobProgress label="Subtítulos en inglés" job={jobs.en ?? { msg: transMsgEn, progress: null, elapsed: 0 }} />}
+            {!transEn && transMsgEn && <div className={`trans-status ${transMsgEn.startsWith('Error') ? 'trans-error' : ''}`}>{transMsgEn}</div>}
           </div>
           <div className="trans-col">
             <div className="trans-label">🇪🇸 Español</div>
@@ -1028,6 +1415,8 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
               <input ref={srtEsInput} type="file" accept=".srt" style={{ display: 'none' }} onChange={e => importSrt(e, 'es')} />
               {subsEs.length > 0 && <span className="subs-badge">{subsEs.length} subs</span>}
             </div>
+            {translating && <JobProgress label="Traducción al español" job={jobs.es ?? { msg: transMsgEs, progress: null, elapsed: 0 }} />}
+            {!translating && transMsgEs && <div className={`trans-status ${transMsgEs.startsWith('Error') ? 'trans-error' : ''}`}>{transMsgEs}</div>}
           </div>
         </div>
         </div>{/* end player-left-scroll */}
@@ -1079,7 +1468,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
                 })
               }
               return (
-              <div key={seg.id ?? idx} className={`fc ${isActive ? 'fc-active' : ''}`}>
+              <div key={seg.id ?? idx} className={`fc ${isActive ? 'fc-active' : ''}`} data-fc-idx={idx}>
 
                 {/* Header siempre visible */}
                 {isCollapsed && (
@@ -1170,7 +1559,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
                     <div key={ri} className={`fc-rep-row ${isActive && currentRepDisplay === ri ? 'fc-rep-active' : ''}`}>
                       <div className="fc-rep-speeds">
                         <span className="fc-rep-lbl">V{ri + 1}</span>
-                        {[0.5, 0.75, 1, 1.25, 1.5].map(v => (
+                        {SPEEDS_COMPACT.map(v => (
                           <button key={v}
                             className={`fc-speed ${(rc.speed ?? 1) === v ? 'fc-speed-on' : ''}`}
                             onClick={() => updateRepConfig(idx, ri, { speed: v })}>
@@ -1205,8 +1594,8 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
                 {/* Footer */}
                 <div className="fc-footer">
                   <button className="fc-template-btn" onClick={() => saveAsTemplate(repConfig)} title="Guardar config como plantilla">📋 Plantilla</button>
-                  <button className="fc-dl-btn" disabled={downloading === seg.id} onClick={() => downloadSegment(seg)}>
-                    {downloading === seg.id ? '⏳' : '⬇️'} Bajar
+                  <button className="fc-dl-btn" onClick={() => openExport('segment', idx)} title="Guardar este fragmento (con sus vueltas, velocidades y subtítulos)">
+                    ⬇️ Bajar
                   </button>
                   <button className="fc-del-btn" onClick={() => deleteSegment(idx)}>🗑</button>
                 </div>
@@ -1224,6 +1613,10 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
           const subs = lang === 'en' ? subsEn : subsEs
           return (
             <div className="seg-list">
+              {subs.length > 0 && (
+                <a className="srt-download" href={`/api/subtitles/${encodeURIComponent(video.name)}/srt?lang=${lang}&shift=${subShift}`}
+                   download title="Descargar estos subtítulos como archivo .srt (con el delay actual)">⬇ Descargar .srt</a>
+              )}
               {subs.length === 0 && (
                 <div className="seg-empty">
                   Sin subtítulos todavía.<br />
@@ -1258,6 +1651,16 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
         })()}
       </div>
 
+      {exportReq && (
+        <ExportDialog
+          mode={exportReq.mode} video={video}
+          segment={exportReq.mode === 'segment' ? segments[exportReq.idx] : null}
+          subsEn={subsEn} subsEs={subsEs} showEn={showEn} showEs={showEs}
+          subStyle={subStyle} subSize={subSize} subOffset={subOffset} subShift={subShift}
+          refHeight={exportReq.h} currentTime={exportReq.t}
+          onClose={() => setExportReq(null)}
+        />
+      )}
     </div>
     
   )

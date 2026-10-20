@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#0f1117">
+  <title>Control Remoto · Listening App</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+
+    body {
+      background: #0f1117;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding-bottom: 5rem;
+      min-height: 100dvh;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      padding: .85rem 1rem .65rem;
+      background: #0d1117;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid #1a202c;
+    }
+    h1 { font-size: 1.05rem; color: #63b3ed; font-weight: 700; flex: 1; }
+    #dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #f6e05e; flex-shrink: 0; transition: background .3s;
+    }
+    #dot.on  { background: #68d391; }
+    #dot.off { background: #fc8181; }
+    #st { font-size: .75rem; color: #718096; }
+
+    #video-lbl {
+      font-size: .78rem; color: #63b3ed;
+      padding: .4rem 1rem;
+      background: #0d1a2e;
+      border-bottom: 1px solid #1a3a5c;
+      display: none;
+    }
+
+    #frag-list {
+      display: flex;
+      flex-direction: column;
+      padding: .6rem .6rem 0;
+      gap: .55rem;
+    }
+
+    .card {
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      border-radius: .9rem;
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+    .card.playing { border-color: #3182ce; }
+
+    /* ── Card header ── */
+    .card-head {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .75rem .9rem .65rem;
+    }
+    .card-info { flex: 1; min-width: 0; }
+    .card-name {
+      font-size: .95rem; font-weight: 700;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .card.playing .card-name { color: #63b3ed; }
+    .card-meta { font-size: .7rem; color: #718096; margin-top: .1rem; }
+    .card-summary { font-size: .68rem; color: #4a6080; margin-top: .2rem; letter-spacing: .01em; }
+
+    .gear-btn {
+      background: #2d3748; border: none; color: #a0aec0;
+      border-radius: .4rem; padding: .3rem .5rem;
+      font-size: .75rem; cursor: pointer; flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent; transition: background .15s;
+    }
+    .gear-btn.open { color: #63b3ed; background: #1e3558; }
+
+    /* ── Play button ── */
+    .play-row { padding: 0 .9rem .75rem; }
+    .play-btn {
+      width: 100%; padding: .65rem;
+      border: none; border-radius: .55rem;
+      font-size: .95rem; font-weight: 700;
+      background: #2b6cb0; color: #fff;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: background .12s;
+    }
+    .play-btn:active { background: #2c5282; }
+    .card.playing .play-btn { background: #276749; }
+    .card.playing .play-btn:active { background: #1c4532; }
+
+    /* ── Config panel ── */
+    .cfg {
+      background: #111720;
+      border-top: 1px solid #2d3748;
+      padding: .7rem .9rem .8rem;
+      display: none;
+    }
+    .cfg.open { display: block; }
+
+    .cfg-row {
+      display: flex; align-items: center; gap: .5rem;
+      margin-bottom: .65rem;
+    }
+    .cfg-lbl { font-size: .75rem; color: #a0aec0; min-width: 58px; }
+
+    .rep-ctrl { display: flex; align-items: center; gap: .45rem; }
+    .adj {
+      background: #2d3748; border: none; color: #e2e8f0;
+      border-radius: .4rem; width: 30px; height: 30px;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .adj:active { background: #4a5568; }
+    .rep-n { font-size: 1rem; font-weight: 700; min-width: 22px; text-align: center; }
+
+    /* ── Vuelta rows ── */
+    .vueltas { display: flex; flex-direction: column; gap: .35rem; }
+    .vrow {
+      display: flex; align-items: center; gap: .4rem;
+      background: #1a202c; border-radius: .5rem;
+      padding: .35rem .55rem;
+    }
+    .vnum { font-size: .68rem; color: #718096; font-weight: 700; min-width: 20px; }
+    .speeds { display: flex; gap: .2rem; flex-wrap: wrap; flex: 1; }
+    .schip {
+      background: #2d3748; border: 1.5px solid transparent;
+      color: #a0aec0; border-radius: .3rem;
+      padding: .22rem .38rem; font-size: .7rem; font-weight: 700;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .schip.on { background: #1e3a5f; border-color: #63b3ed; color: #bee3f8; }
+    .subs { display: flex; gap: .2rem; flex-shrink: 0; }
+    .sbchip {
+      background: #2d3748; border: 1.5px solid transparent;
+      border-radius: .3rem; padding: .22rem .35rem;
+      font-size: .8rem; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      opacity: .4; transition: opacity .15s, border-color .15s;
+    }
+    .sbchip.on { opacity: 1; border-color: #48bb78; background: #1c3a2a; }
+
+    /* ── Stop FAB ── */
+    #stop-btn {
+      display: none;
+      position: fixed; bottom: .9rem; left: .9rem; right: .9rem;
+      padding: .8rem; border: none; border-radius: .8rem;
+      font-size: .95rem; font-weight: 700;
+      background: #c53030; color: #fff;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 4px 20px rgba(197,48,48,.45);
+      z-index: 200;
+    }
+    #stop-btn:active { background: #9b2c2c; }
+
+    .empty { text-align: center; color: #4a5568; padding: 3rem 1rem; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <div id="dot"></div>
+    <h1>🎧 Control Remoto</h1>
+    <span id="st">Conectando…</span>
+  </header>
+  <div id="video-lbl"></div>
+  <div id="frag-list"><div class="empty">Esperando conexión con la app…</div></div>
+  <button id="stop-btn" onclick="sendStop()">⏹ Detener</button>
+
+  <script>
+    const SPEEDS = [0.5, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.25, 1.5, 2]
+
+    let ws        = null
+    let frags     = []
+    let activeIdx = null
+    let localCfg  = {}      // { [idx]: { repeat, repConfig } }
+    let openCards = new Set()
+
+    const dot      = document.getElementById('dot')
+    const stEl     = document.getElementById('st')
+    const vidLbl   = document.getElementById('video-lbl')
+    const fragList = document.getElementById('frag-list')
+    const stopBtn  = document.getElementById('stop-btn')
+
+    function fmt(s) {
+      return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0')
+    }
+
+    // Devuelve (e inicializa si no existe) la config local del fragmento
+    function cfg(idx) {
+      if (!localCfg[idx]) {
+        const seg = frags[idx] || {}
+        const base = seg.repConfig?.length
+          ? seg.repConfig.map(r => ({ speed: r.speed ?? 1, en: !!r.en, es: !!r.es }))
+          : [{ speed: 1, en: true, es: false }]
+        localCfg[idx] = { repeat: seg.repeat ?? base.length, repConfig: base }
+      }
+      return localCfg[idx]
+    }
+
+    function setRepeat(idx, n) {
+      n = Math.max(1, Math.min(20, n))
+      const c = cfg(idx)
+      const old = c.repConfig
+      c.repeat = n
+      c.repConfig = Array.from({ length: n }, (_, j) =>
+        old[j] ? { ...old[j] } : { ...old[old.length - 1] }
+      )
+      patchCard(idx)
+    }
+
+    function setSpeed(idx, ri, spd) {
+      cfg(idx).repConfig[ri] = { ...cfg(idx).repConfig[ri], speed: spd }
+      patchCard(idx)
+    }
+
+    function toggleSub(idx, ri, lang) {
+      const rc = cfg(idx).repConfig[ri]
+      cfg(idx).repConfig[ri] = { ...rc, [lang]: !rc[lang] }
+      patchCard(idx)
+    }
+
+    function summary(c) {
+      return c.repConfig.map((rc, i) => {
+        const fl = [rc.en && '🇬🇧', rc.es && '🇪🇸'].filter(Boolean).join('')
+        return `V${i + 1}:${rc.speed}x${fl}`
+      }).join('  ') || '—'
+    }
+
+    function cardHTML(idx) {
+      const seg  = frags[idx]
+      const c    = cfg(idx)
+      const act  = idx === activeIdx
+      const open = openCards.has(idx)
+      const dur  = (seg.end - seg.start).toFixed(1)
+
+      const vueltas = c.repConfig.map((rc, ri) => {
+        const spds = SPEEDS.map(s =>
+          `<button class="schip${rc.speed === s ? ' on' : ''}"
+             onclick="setSpeed(${idx},${ri},${s})">${s}x</button>`
+        ).join('')
+        const en = `<button class="sbchip${rc.en ? ' on' : ''}"
+          onclick="toggleSub(${idx},${ri},'en')">🇬🇧</button>`
+        const es = `<button class="sbchip${rc.es ? ' on' : ''}"
+          onclick="toggleSub(${idx},${ri},'es')">🇪🇸</button>`
+        return `<div class="vrow">
+          <span class="vnum">V${ri + 1}</span>
+          <div class="speeds">${spds}</div>
+          <div class="subs">${en}${es}</div>
+        </div>`
+      }).join('')
+
+      return `
+        <div class="card-head">
+          <div class="card-info">
+            <div class="card-name">${seg.phrase || 'Fragmento ' + (idx + 1)}</div>
+            <div class="card-meta">${fmt(seg.start)} → ${fmt(seg.end)} · ${dur}s</div>
+            <div class="card-summary">${summary(c)}</div>
+          </div>
+          <button class="gear-btn${open ? ' open' : ''}"
+            onclick="toggleOpen(${idx})">
+            ${open ? '▲' : '⚙️'}
+          </button>
+        </div>
+        <div class="cfg${open ? ' open' : ''}">
+          <div class="cfg-row">
+            <span class="cfg-lbl">Vueltas:</span>
+            <div class="rep-ctrl">
+              <button class="adj" onclick="setRepeat(${idx},${c.repeat}-1)">−</button>
+              <span class="rep-n">${c.repeat}</span>
+              <button class="adj" onclick="setRepeat(${idx},${c.repeat}+1)">+</button>
+            </div>
+          </div>
+          <div class="vueltas">${vueltas}</div>
+        </div>
+        <div class="play-row">
+          <button class="play-btn" onclick="sendPlay(${idx})">
+            ${act ? '🔄 Repitiendo…' : '▶ Repetir'}
+          </button>
+        </div>`
+    }
+
+    function patchCard(idx) {
+      const el = document.getElementById('c' + idx)
+      if (!el) return
+      el.className = 'card' + (idx === activeIdx ? ' playing' : '')
+      el.innerHTML = cardHTML(idx)
+    }
+
+    function toggleOpen(idx) {
+      openCards.has(idx) ? openCards.delete(idx) : openCards.add(idx)
+      patchCard(idx)
+    }
+
+    function render() {
+      stopBtn.style.display = activeIdx !== null ? 'block' : 'none'
+      if (!frags.length) {
+        fragList.innerHTML = '<div class="empty">Sin fragmentos aún.<br>Creá uno en la app.</div>'
+        return
+      }
+      fragList.innerHTML = frags.map((_, i) =>
+        `<div class="card${i === activeIdx ? ' playing' : ''}" id="c${i}">${cardHTML(i)}</div>`
+      ).join('')
+    }
+
+    function sendPlay(idx) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return
+      const c = cfg(idx)
+      ws.send(JSON.stringify({ type: 'remote_play', idx, repeat: c.repeat, repConfig: c.repConfig }))
+      activeIdx = idx
+      render()
+    }
+
+    function sendStop() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return
+      ws.send(JSON.stringify({ type: 'remote_stop' }))
+      activeIdx = null
+      render()
+    }
+
+    function connect() {
+      ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`)
+
+      ws.onopen = () => {
+        dot.className = 'on'
+        stEl.textContent = '✓ Conectado'
+        ws.send(JSON.stringify({ type: 'request_state' }))
+      }
+      ws.onclose = () => {
+        dot.className = 'off'
+        stEl.textContent = 'Reconectando…'
+        setTimeout(connect, 2500)
+      }
+      ws.onerror = () => ws.close()
+
+      ws.onmessage = e => {
+        let msg; try { msg = JSON.parse(e.data) } catch { return }
+
+        if (msg.type === 'state') {
+          const newFrags = msg.segments || []
+          // Solo inicializar localCfg para fragmentos nuevos; preservar config ya editada
+          newFrags.forEach((seg, i) => {
+            if (localCfg[i]) return
+            const base = seg.repConfig?.length
+              ? seg.repConfig.map(r => ({ speed: r.speed ?? 1, en: !!r.en, es: !!r.es }))
+              : [{ speed: 1, en: true, es: false }]
+            localCfg[i] = { repeat: seg.repeat ?? base.length, repConfig: base }
+          })
+          // Limpiar configs de fragmentos que ya no existen
+          Object.keys(localCfg).forEach(k => { if (k >= newFrags.length) delete localCfg[k] })
+          frags = newFrags
+          activeIdx = msg.activeIdx ?? null
+          if (msg.video) { vidLbl.textContent = '🎬 ' + msg.video; vidLbl.style.display = 'block' }
+          render()
+        } else if (msg.type === 'playing') {
+          activeIdx = msg.idx ?? null; render()
+        } else if (msg.type === 'stopped') {
+          activeIdx = null; render()
+        }
+      }
+    }
+
+    connect()
+  </script>
+</body>
+</html>

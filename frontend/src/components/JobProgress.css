@@ -1,0 +1,52 @@
+/* Relojito de progreso (transcripción, traducción, exportación) */
+.jp {
+  --jp-bg: #0f1117; --jp-border: #2d3748; --jp-text: #e2e8f0; --jp-dim: #8a97ab;
+  --jp-accent: #63b3ed; --jp-track: #2d3748;
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 8px; padding: 8px 10px; min-width: 0;
+  background: var(--jp-bg); border: 1px solid var(--jp-border); border-radius: 10px;
+  color: var(--jp-text);
+}
+.jp-clock { width: 44px; height: 44px; flex-shrink: 0; }
+.jp-face { fill: none; stroke: var(--jp-track); stroke-width: 3; }
+.jp-arc  { fill: none; stroke: var(--jp-accent); stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray .6s ease; }
+.jp-tick { stroke: var(--jp-dim); stroke-width: 1.4; stroke-linecap: round; }
+.jp-hand { transform-origin: 22px 22px; transition: transform .6s ease; }
+.jp-hand line { stroke: var(--jp-accent); stroke-width: 2.4; stroke-linecap: round; }
+.jp-pin { fill: var(--jp-accent); }
+.jp-hand-spin { animation: jp-spin 1.8s linear infinite; }
+@keyframes jp-spin { to { transform: rotate(360deg); } }
+
+.jp-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.jp-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.jp-pct { font-size: 1.15rem; font-weight: 800; color: var(--jp-accent); font-variant-numeric: tabular-nums; line-height: 1; }
+.jp-eta { font-size: 0.78rem; font-weight: 600; color: var(--jp-text); }
+
+.jp-bar { position: relative; height: 7px; border-radius: 4px; background: var(--jp-track); overflow: hidden; }
+.jp-fill { height: 100%; border-radius: 4px; background: var(--jp-accent); transition: width .6s ease; }
+.jp-bar-wait .jp-fill {
+  width: 35%; position: absolute; left: 0; top: 0;
+  animation: jp-slide 1.3s ease-in-out infinite;
+}
+@keyframes jp-slide { 0% { left: -35%; } 100% { left: 100%; } }
+
+.jp-msg { font-size: 0.72rem; color: var(--jp-dim); line-height: 1.35; overflow-wrap: anywhere; }
+.jp-detail { color: var(--jp-dim); }
+
+/* ── Harry Potter: madera oscura con dorado ── */
+[data-theme="harry"] .jp {
+  --jp-bg: linear-gradient(135deg, #2d1a0a 0%, #1e1005 100%); --jp-border: #8b6014; --jp-text: #e8c96a;
+  --jp-dim: #b8956a; --jp-accent: #c9a84c; --jp-track: rgba(201,168,76,.22);
+  background: var(--jp-bg); border-radius: 6px; font-family: 'Cinzel', 'Palatino Linotype', Georgia, serif;
+}
+[data-theme="harry"] .jp-msg, [data-theme="harry"] .jp-eta { font-family: 'Crimson Text', Georgia, serif; }
+
+/* ── Cómic: papel amarillo, borde negro grueso y sombra dura ── */
+[data-theme="comic"] .jp {
+  --jp-bg: #fff7d6; --jp-border: #000; --jp-text: #000; --jp-dim: #333; --jp-accent: #ef4444; --jp-track: #fff;
+  border-width: 3px; border-radius: 0; box-shadow: 4px 4px 0 #000;
+}
+[data-theme="comic"] .jp-pct { font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 1.4rem; }
+[data-theme="comic"] .jp-bar { border: 2px solid #000; border-radius: 0; background: #fff; }
+[data-theme="comic"] .jp-fill { border-radius: 0; }
+[data-theme="comic"] .jp-face { stroke: #000; stroke-width: 2.4; fill: #fff; }

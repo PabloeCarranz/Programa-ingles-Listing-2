@@ -1,0 +1,30 @@
+.xp-wrap { margin-top: 22px; }
+.xp-toggle {
+  width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  background: #1a202c; color: #a0aec0; border: 1px solid #2d3748; border-radius: 12px; padding: 12px 16px;
+  font-size: .9rem; font-weight: 600; cursor: pointer;
+}
+.xp-toggle:hover { border-color: #4299e1; color: #e2e8f0; }
+.xp-body { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.xp-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.xp-folder { flex: 1; min-width: 0; font-size: .72rem; color: #718096; word-break: break-all; }
+.xp-row { display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: #1a202c; border: 1px solid #2d3748; border-radius: 10px; }
+.xp-info { flex: 1; min-width: 0; }
+.xp-name { font-size: .88rem; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xp-meta { font-size: .72rem; color: #718096; margin-top: 2px; }
+.xp-btn { background: #2d3748; color: #cbd5e0; border: none; border-radius: 8px; padding: 6px 10px; font-size: .85rem; cursor: pointer; }
+.xp-btn:hover { background: #3a4a5c; color: #fff; }
+.xp-del:hover { background: #742a2a; }
+.xp-err { color: #fc8181; font-size: .8rem; }
+.xp-modal { position: fixed; inset: 0; z-index: 10000; background: rgba(5,8,14,.8); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.xp-player { width: min(900px, 100%); background: #0f1117; border: 1px solid #2d3748; border-radius: 12px; overflow: hidden; }
+.xp-player-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 12px; font-size: .82rem; color: #a0aec0; }
+.xp-player video { width: 100%; max-height: 75vh; display: block; background: #000; }
+
+[data-theme="harry"] .xp-toggle, [data-theme="harry"] .xp-row { background: linear-gradient(135deg, #2d1a0a 0%, #1e1005 100%); border: 1.5px solid #8b6014; border-radius: 6px; }
+[data-theme="harry"] .xp-toggle, [data-theme="harry"] .xp-name { color: #e8c96a; font-family: 'Cinzel', 'Palatino Linotype', serif; }
+[data-theme="harry"] .xp-meta, [data-theme="harry"] .xp-folder { color: #b8956a; }
+[data-theme="harry"] .xp-btn { background: linear-gradient(180deg, #3d2510 0%, #2d1a0a 100%); border: 1px solid #8b6014; color: #d4b483; border-radius: 4px; }
+[data-theme="comic"] .xp-toggle, [data-theme="comic"] .xp-row { background: #fff7d6; color: #000; border: 3px solid #000; border-radius: 0; box-shadow: 4px 4px 0 #000; }
+[data-theme="comic"] .xp-toggle, [data-theme="comic"] .xp-name { color: #000; font-family: 'Bangers', cursive; letter-spacing: 1px; text-transform: uppercase; }
+[data-theme="comic"] .xp-meta, [data-theme="comic"] .xp-folder { color: #333; }

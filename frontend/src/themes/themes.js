@@ -5,11 +5,13 @@
 //   3. Agregar una entrada al array THEMES
 
 import './harry.css'
+import './comic.css'
 // import './futuro_tema.css'   ← así de fácil agregar más
 
 export const THEMES = [
   { id: 'classic', label: 'Clásico',      icon: '🌑' },
   { id: 'harry',   label: 'Harry Potter', icon: '⚡' },
+  { id: 'comic',   label: 'Cómic',        icon: '🦸‍♂️' },
   // { id: 'futuro', label: 'Mi Tema', icon: '🚀' },
 ]
 

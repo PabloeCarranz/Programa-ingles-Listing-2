@@ -1,0 +1,408 @@
+/* ══════════════════════════════════════════════════════════════
+   TEMA: COMIC NOIR & ACTION [data-theme="comic"]
+   Mezcla de Novela Gráfica y Superhéroes
+   ══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Kalam:wght@400;700&display=swap');
+
+/* ═══════════ FRAGMENTOS CON IMAGEN DE VIÑETA ═══════════ */
+
+/* Imagen 200px fija arriba; config se expande debajo */
+[data-theme="comic"] .fc[data-fc-idx="0"],
+[data-theme="comic"] .fc[data-fc-idx="1"] {
+    position: relative !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 0 -80px 0 !important;
+    padding: 200px 0 0 0 !important;
+    overflow: visible !important;
+    transition: none;
+}
+
+[data-theme="comic"] .fc[data-fc-idx="0"]::after,
+[data-theme="comic"] .fc[data-fc-idx="1"]::after {
+    display: none;
+}
+
+/* Cada viñeta encima de la anterior */
+[data-theme="comic"] .fc[data-fc-idx="0"] { z-index: 1; left: -15px; }
+[data-theme="comic"] .fc[data-fc-idx="1"] { z-index: 2; left: 25px; }
+[data-theme="comic"] .fc[data-fc-idx="2"] { z-index: 3; }
+[data-theme="comic"] .fc[data-fc-idx="3"] { z-index: 4; }
+[data-theme="comic"] .fc[data-fc-idx="4"] { z-index: 5; }
+
+[data-theme="comic"] .fc[data-fc-idx="0"]::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: auto !important;
+    height: 200px;
+    background-image: url('./primer fragmento.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-color: transparent !important;
+    border: none !important;
+    clip-path: none !important;
+    z-index: 0;
+}
+
+[data-theme="comic"] .fc[data-fc-idx="1"]::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: auto !important;
+    height: 200px;
+    background-image: url('./segundo fragmento.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-color: transparent !important;
+    border: none !important;
+    clip-path: none !important;
+    z-index: 0;
+}
+
+/* Ocultar el nombre/label del fragmento */
+[data-theme="comic"] .fc[data-fc-idx="0"] .fc-collapsed-name,
+[data-theme="comic"] .fc[data-fc-idx="1"] .fc-collapsed-name,
+[data-theme="comic"] .fc[data-fc-idx="0"] .fc-name,
+[data-theme="comic"] .fc[data-fc-idx="1"] .fc-name {
+    display: none !important;
+}
+
+/* ── fc-header: barra inferior dentro de la imagen ── */
+[data-theme="comic"] .fc[data-fc-idx="0"] .fc-header,
+[data-theme="comic"] .fc[data-fc-idx="1"] .fc-header {
+    position: absolute !important;
+    top: 158px;
+    left: 30px; right: 0;
+    height: 42px;
+    z-index: 5;
+    padding: 0 10px !important;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    /* Oculta por defecto, aparece al hover */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+/* Bloque par (segundo): barra más chica y a la izquierda */
+[data-theme="comic"] .fc[data-fc-idx="1"] .fc-header {
+    left: -20px !important;
+    right: 40px !important;
+}
+
+[data-theme="comic"] .fc[data-fc-idx="0"]:hover .fc-header,
+[data-theme="comic"] .fc[data-fc-idx="1"]:hover .fc-header,
+[data-theme="comic"] .fc[data-fc-idx="0"].fc-active .fc-header,
+[data-theme="comic"] .fc[data-fc-idx="1"].fc-active .fc-header {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+[data-theme="comic"] .fc[data-fc-idx="0"] .fc-time,
+[data-theme="comic"] .fc[data-fc-idx="1"] .fc-time {
+    font-family: 'Bangers', cursive !important;
+    font-size: 1rem !important;
+    letter-spacing: 2px;
+    color: #fff !important;
+    text-shadow: 1px 1px 0 #000;
+    position: relative; z-index: 2;
+}
+
+/* Toggle ▼/▲ */
+[data-theme="comic"] .fc[data-fc-idx="0"] .fc-toggle,
+[data-theme="comic"] .fc[data-fc-idx="1"] .fc-toggle {
+    font-family: 'Bangers', cursive !important;
+    font-size: 1rem !important;
+    background: #f59e0b !important;
+    color: #000 !important;
+    border: 2px solid #000 !important;
+    box-shadow: 2px 2px 0 #000 !important;
+    border-radius: 0 !important;
+    padding: 2px 10px !important;
+}
+
+/* Mini play cuando está colapsado */
+[data-theme="comic"] .fc[data-fc-idx="0"] .fc-play-mini,
+[data-theme="comic"] .fc[data-fc-idx="1"] .fc-play-mini {
+    font-family: 'Bangers', cursive !important;
+    font-size: 0.9rem !important;
+    background: #22c55e !important;
+    color: #000 !important;
+    border: 2px solid #000 !important;
+    box-shadow: 2px 2px 0 #000 !important;
+    border-radius: 0 !important;
+    padding: 2px 8px !important;
+}
+
+/* ── Botón Reproducir: centrado dentro de la imagen ── */
+[data-theme="comic"] .fc[data-fc-idx="0"] .fc-play-btn,
+[data-theme="comic"] .fc[data-fc-idx="1"] .fc-play-btn {
+    position: absolute !important;
+    top: 75px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    white-space: nowrap;
+    width: auto !important;
+    font-family: 'Bangers', cursive !important;
+    font-size: 1.5rem !important;
+    letter-spacing: 3px;
+    background: #f59e0b !important;
+    color: #000 !important;
+    border: 3px solid #000 !important;
+    box-shadow: 5px 5px 0 #000 !important;
+    padding: 6px 22px !important;
+    text-transform: uppercase;
+    border-radius: 0 !important;
+}
+
+[data-theme="comic"] .fc[data-fc-idx="0"] .fc-play-btn:hover,
+[data-theme="comic"] .fc[data-fc-idx="1"] .fc-play-btn:hover {
+    background: #ef4444 !important;
+    color: #fff !important;
+    transform: translateX(-50%) translate(-2px, -2px) !important;
+    box-shadow: 7px 7px 0 #000 !important;
+}
+
+/* ── Botones Pausar/Detener: centrados dentro de la imagen ── */
+[data-theme="comic"] .fc[data-fc-idx="0"] .fc-btns,
+[data-theme="comic"] .fc[data-fc-idx="1"] .fc-btns {
+    position: absolute !important;
+    top: 65px;
+    left: 0; right: 0;
+    z-index: 5;
+    display: flex !important;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 10px;
+}
+
+[data-theme="comic"] .fc[data-fc-idx="0"] .fc-seguir-btn,
+[data-theme="comic"] .fc[data-fc-idx="1"] .fc-seguir-btn {
+    font-family: 'Bangers', cursive !important;
+    font-size: 1.2rem !important;
+    letter-spacing: 2px;
+    background: #22c55e !important;
+    color: #000 !important;
+    border: 3px solid #000 !important;
+    box-shadow: 4px 4px 0 #000 !important;
+    border-radius: 0 !important;
+}
+
+[data-theme="comic"] .fc[data-fc-idx="0"] .fc-detener-btn,
+[data-theme="comic"] .fc[data-fc-idx="1"] .fc-detener-btn {
+    font-family: 'Bangers', cursive !important;
+    font-size: 1.2rem !important;
+    letter-spacing: 2px;
+    background: #ef4444 !important;
+    color: #fff !important;
+    border: 3px solid #000 !important;
+    box-shadow: 4px 4px 0 #000 !important;
+    border-radius: 0 !important;
+}
+
+
+/* ═══════════ ESTILOS GENERALES DEL TEMA ═══════════ */
+
+/* ── Fondo con textura Ben-Day ── */
+[data-theme="comic"] body {
+  background-color: #1a3a6d; 
+  background-image: radial-gradient(rgba(0,0,0,0.3) 15%, transparent 16%);
+  background-size: 12px 12px;
+  font-family: var(--comic-font-body);
+}
+
+/* ═══════════ HEADER & TOPBAR ═══════════ */
+
+[data-theme="comic"] .player-topbar {
+  background: var(--comic-yellow);
+  border-bottom: var(--comic-border);
+  box-shadow: 0 4px 0 #000;
+  position: relative;
+  padding-left: 60px;
+}
+
+[data-theme="comic"] .player-topbar::before {
+  content: 'POW!';
+  position: absolute;
+  left: 10px; top: 50%;
+  transform: translateY(-50%) rotate(-10deg);
+  background: var(--comic-red);
+  color: white;
+  padding: 4px 8px;
+  font-family: var(--comic-font-main);
+  border: 2px solid black;
+  clip-path: polygon(0% 15%, 15% 15%, 15% 0%, 85% 0%, 85% 15%, 100% 15%, 100% 85%, 85% 85%, 85% 100%, 15% 100%, 15% 85%, 0% 85%);
+  animation: comic-bounce 2s infinite;
+}
+
+@keyframes comic-bounce {
+  0%, 100% { transform: translateY(-50%) rotate(-10deg) scale(1); }
+  50% { transform: translateY(-50%) rotate(-10deg) scale(1.1); }
+}
+
+[data-theme="comic"] .player-title {
+  font-family: var(--comic-font-main);
+  color: var(--comic-black);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ═══════════ VIDEO FRAME (VIÑETA) ═══════════ */
+
+[data-theme="comic"] .video-wrap {
+  border: 5px solid #000 !important;
+  box-shadow: var(--comic-shadow);
+  background: #000;
+  margin: 10px;
+}
+
+/* ═══════════ CONTROLES (ACTION BUTTONS) ═══════════ */
+
+[data-theme="comic"] button, 
+[data-theme="comic"] .speed-btn, 
+[data-theme="comic"] .sub-toggle {
+  background: var(--comic-white);
+  border: var(--comic-border) !important;
+  font-family: var(--comic-font-main);
+  text-transform: uppercase;
+  box-shadow: 4px 4px 0px #000;
+}
+
+[data-theme="comic"] button:hover {
+  background-color: var(--comic-yellow) !important;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #000;
+}
+
+/* ═══════════ PANEL DERECHO Y FRAGMENTOS ═══════════ */
+
+[data-theme="comic"] .player-right {
+  background-color: #f3eee3;
+  border-left: var(--comic-border);
+  background-image: radial-gradient(#d1d1d1 1px, transparent 1px);
+  background-size: 10px 10px;
+}
+
+/* Contenedor de fragmentos: puntillado Ben-Day estilo comic */
+[data-theme="comic"] .seg-list {
+  padding: 0 !important;
+  background-color: #f5e6c8;
+  background-image:
+    radial-gradient(circle, #8B6914 2px, transparent 2px),
+    radial-gradient(circle, #8B6914 0.7px, transparent 0.7px);
+  background-size: 12px 12px, 6px 6px;
+  background-position: 6px 6px, 0px 0px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Tarjetas generales: pegadas al gutter */
+[data-theme="comic"] .fc {
+  position: relative;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0;
+  overflow: visible;
+  transition: margin-bottom 0.3s ease;
+}
+
+/* El fondo irregular de color (Aplica a los demás, el primero lo sobreescribe) */
+[data-theme="comic"] .fc::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border: 3px solid #000;
+  /* Forma de explosión/globo */
+  clip-path: polygon(
+    0% 10px, 10px 10px, 10px 0%, 
+    calc(100% - 10px) 0%, calc(100% - 10px) 10px, 100% 10px, 
+    100% calc(100% - 10px), calc(100% - 10px) calc(100% - 10px), calc(100% - 10px) 100%, 
+    10px 100%, 10px calc(100% - 10px), 0% calc(100% - 10px)
+  );
+  z-index: 0;
+}
+
+/* Colores de las viñetas por orden (los que no tienen imagen personalizada) */
+[data-theme="comic"] .fc[data-fc-idx="2"]::before { background-color: #22c55e; } /* Verde */
+[data-theme="comic"] .fc[data-fc-idx="3"]::before { background-color: #6366f1; } /* Indigo */
+[data-theme="comic"] .fc[data-fc-idx="4"]::before { background-color: #f97316; } /* Naranja */
+[data-theme="comic"] .fc[data-fc-idx="5"]::before { background-color: #ef4444; } /* Rojo */
+
+/* Hover general: leve escala para los fragmentos de color */
+[data-theme="comic"] .fc:hover {
+  transform: scale(1.02);
+  z-index: 10;
+  margin-bottom: 20px !important;
+}
+
+/* Hover en viñetas con imagen: sin escala, solo empuja hacia abajo */
+[data-theme="comic"] .fc[data-fc-idx="0"]:hover,
+[data-theme="comic"] .fc[data-fc-idx="1"]:hover {
+  transform: none;
+  z-index: 10;
+  margin-bottom: 28px !important;
+}
+
+/* Texto general de los fragmentos (del 2 al 5) */
+[data-theme="comic"] .fc-name {
+  font-family: var(--comic-font-action);
+  color: #fff;
+  text-shadow: 2px 2px 0px #000;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 2;
+  border: none !important;
+  background: transparent !important;
+}
+
+[data-theme="comic"] .fc-time {
+  font-family: var(--comic-font-main);
+  color: #fff;
+  position: relative;
+  z-index: 2;
+}
+
+/* Iconos de superhéroes (Opcional) */
+[data-theme="comic"] .fc::after {
+  content: '';
+  position: absolute;
+  width: 50px; height: 50px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  top: -15px; left: -10px;
+  z-index: 5;
+  pointer-events: none;
+}
+/* Ejemplo: Poner un logo en el primer bloque */
+/* [data-theme="comic"] .fc:nth-child(1)::after { background-image: url('./assets/superman-logo.png'); } */
+
+/* ═══════════ DECORACIONES EXTRA ═══════════ */
+
+[data-theme="comic"] .player-left::after {
+  content: '';
+  position: absolute;
+  bottom: 20px; left: 20px;
+  width: 150px; height: 150px;
+  background: url('./EstiloComic.jpg') no-repeat center / contain;
+  opacity: 0.3;
+  filter: grayscale(1) contrast(1.5);
+  pointer-events: none;
+}
+
+/* Scrollbar */
+[data-theme="comic"] ::-webkit-scrollbar { width: 12px; }
+[data-theme="comic"] ::-webkit-scrollbar-track { background: #000; }
+[data-theme="comic"] ::-webkit-scrollbar-thumb {
+  background: var(--comic-yellow);
+  border: 2px solid #000;
+}

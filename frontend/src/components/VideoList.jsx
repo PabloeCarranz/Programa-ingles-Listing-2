@@ -1,10 +1,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { ThemeDropdown } from './ThemeDropdown'
 import escobaImg from '../themes/escoba.png'
+import ExportsPanel from './ExportsPanel'
+import VideoLink from './VideoLink'
+import VocabEntry from './VocabEntry'
 
 const VIDEO_EXTS = ['.mp4', '.mkv', '.avi', '.mov', '.webm', '.m4v']
 
-export default function VideoList({ onSelect, theme, onThemeChange }) {
+export default function VideoList({ onSelect, onVocab, theme, onThemeChange }) {
   const [videos,     setVideos]     = useState([])
   const [loading,    setLoading]    = useState(true)
   const [dragging,   setDragging]   = useState(false)
@@ -77,6 +80,12 @@ export default function VideoList({ onSelect, theme, onThemeChange }) {
         </div>
       </div>
 
+      {/* Palabras guardadas de los subtítulos y su repaso */}
+      {onVocab && <VocabEntry onOpen={onVocab} />}
+
+      {/* Traer un video de YouTube pegando el link */}
+      <VideoLink onDone={loadVideos} onOpen={onSelect} />
+
       {/* Drop zone */}
       <div
         className={`drop-zone ${dragging ? 'drop-active' : ''}`}
@@ -119,13 +128,16 @@ export default function VideoList({ onSelect, theme, onThemeChange }) {
               <div className="vcard-name">{v.name.replace(/\.[^.]+$/, '')}</div>
               <div className="vcard-meta">
                 {v.segments > 0 ? `${v.segments} fragmentos guardados` : 'Sin fragmentos aún'}
-                {v.has_subs ? ' · subtítulos ✓' : ''}
+                {v.has_subs_en ? ' · 🇺🇸 EN ✓' : ''}
+                {v.has_subs_es ? ' · 🇪🇸 ES ✓' : ''}
               </div>
             </div>
             <div className="vcard-arrow">›</div>
           </div>
         ))}
       </div>
+
+      <ExportsPanel />
 
       {!loading && videos.length === 0 && uploads.length === 0 && (
         <div className="vlist-empty">

@@ -1,0 +1,43 @@
+.vl-box { margin-bottom: 14px; padding: 14px 16px; background: #1a202c; border: 1px solid #2d3748; border-radius: 12px; }
+.vl-title { font-size: .9rem; font-weight: 700; color: #cbd5e0; margin-bottom: 10px; }
+.vl-form { display: flex; gap: 8px; flex-wrap: wrap; }
+.vl-input {
+  flex: 1 1 240px; min-width: 0; background: #0f1117; color: #e2e8f0; border: 1px solid #2d3748; border-radius: 8px;
+  padding: 9px 12px; font-size: .9rem; outline: none;
+}
+.vl-input:focus { border-color: #4299e1; }
+.vl-input::placeholder { color: #4a5568; }
+.vl-btn { background: #2d3748; color: #cbd5e0; border: none; border-radius: 8px; padding: 8px 14px; font-size: .85rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.vl-btn:hover:not(:disabled) { background: #3a4a5c; color: #fff; }
+.vl-btn:disabled { opacity: .5; cursor: default; }
+.vl-btn-main { background: #3182ce; color: #fff; }
+.vl-btn-main:hover:not(:disabled) { background: #4299e1; }
+.vl-hint { margin-top: 8px; font-size: .75rem; color: #718096; }
+.vl-error { margin-top: 8px; font-size: .82rem; color: #fc8181; }
+
+.vl-row { margin-top: 10px; padding: 10px 12px; background: #0f1117; border: 1px solid #2d3748; border-radius: 10px; }
+.vl-row-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.vl-row-running .vl-row-head { margin-bottom: 8px; }
+.vl-name { flex: 1 1 200px; min-width: 0; font-size: .85rem; color: #cbd5e0; overflow-wrap: anywhere; }
+.vl-name b { color: #e2e8f0; }
+.vl-err { color: #fc8181; }
+.vl-actions { display: flex; align-items: center; gap: 6px; }
+.vl-x { background: none; border: none; color: #718096; font-size: .8rem; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.vl-x:hover { background: #2d3748; color: #fff; }
+
+/* Temas (el archivo de cada tema no se toca: acá solo se adapta este cuadro) */
+[data-theme="harry"] .vl-box, [data-theme="harry"] .vl-row { background: linear-gradient(135deg, #2d1a0a 0%, #1e1005 100%); border: 1.5px solid #8b6014; border-radius: 6px; }
+[data-theme="harry"] .vl-title, [data-theme="harry"] .vl-name, [data-theme="harry"] .vl-name b { color: #e8c96a; font-family: 'Cinzel', 'Palatino Linotype', serif; }
+[data-theme="harry"] .vl-input { background: #1a0e04; color: #f1dfb0; border: 1px solid #8b6014; border-radius: 4px; }
+[data-theme="harry"] .vl-input::placeholder, [data-theme="harry"] .vl-hint { color: #b8956a; }
+[data-theme="harry"] .vl-btn { background: linear-gradient(180deg, #3d2510 0%, #2d1a0a 100%); border: 1px solid #8b6014; color: #d4b483; border-radius: 4px; }
+[data-theme="harry"] .vl-btn-main { background: linear-gradient(180deg, #8b6014 0%, #5c3f0c 100%); color: #fff3cf; }
+[data-theme="harry"] .vl-x { color: #b8956a; }
+[data-theme="comic"] .vl-box, [data-theme="comic"] .vl-row { background: #fff7d6; color: #000; border: 3px solid #000; border-radius: 0; box-shadow: 4px 4px 0 #000; }
+[data-theme="comic"] .vl-title, [data-theme="comic"] .vl-name, [data-theme="comic"] .vl-name b { color: #000; font-family: 'Bangers', cursive; letter-spacing: 1px; }
+[data-theme="comic"] .vl-input { background: #fff; color: #000; border: 3px solid #000; border-radius: 0; }
+[data-theme="comic"] .vl-input::placeholder, [data-theme="comic"] .vl-hint { color: #444; }
+[data-theme="comic"] .vl-btn { background: #fff; color: #000; border: 3px solid #000; border-radius: 0; box-shadow: 2px 2px 0 #000; font-family: 'Bangers', cursive; letter-spacing: 1px; }
+[data-theme="comic"] .vl-btn-main { background: #fff200; }
+[data-theme="comic"] .vl-x { color: #000; }
+[data-theme="comic"] .vl-error, [data-theme="comic"] .vl-err { color: #b00020; }

@@ -1,0 +1,7 @@
+# Dependencias y archivos generados (se recrean con npm install / pip / vite build)
+node_modules/
+frontend/dist/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
