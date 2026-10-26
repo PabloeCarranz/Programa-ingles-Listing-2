@@ -146,7 +146,9 @@ def _default_videos_dir():
         return r'D:\VideosIngles'
     return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'videos')
 
-VIDEOS_DIR = os.environ.get('LISTENING_VIDEOS_DIR') or _default_videos_dir()
+import settings            # carpeta elegida desde la pantalla (config.json)
+_ENV_VIDEOS_DIR = os.environ.get('LISTENING_VIDEOS_DIR')
+VIDEOS_DIR = _ENV_VIDEOS_DIR or settings.saved_videos_dir() or _default_videos_dir()
 PORT       = int(os.environ.get('LISTENING_PORT', '8002'))
 SEGS_DIR   = os.path.join(VIDEOS_DIR, '.segments')
 SUBS_DIR   = os.path.join(VIDEOS_DIR, '.subtitles')
@@ -494,6 +496,7 @@ EXPORTS_DIR = export_routes.register(app, dict(videos_dir=VIDEOS_DIR, video_exts
 
 import download_routes     # traer videos de YouTube (yt-dlp)
 download_routes.register(app, dict(videos_dir=VIDEOS_DIR))
+settings.register(app, dict(videos_dir=VIDEOS_DIR, default_dir=_default_videos_dir(), locked=bool(_ENV_VIDEOS_DIR)))
 import vocab_routes        # Mis palabras: vocabulario guardado + repaso
 vocab_routes.register(app, dict(videos_dir=VIDEOS_DIR))
 

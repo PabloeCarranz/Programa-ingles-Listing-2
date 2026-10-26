@@ -3,6 +3,7 @@ import { ThemeDropdown } from './ThemeDropdown'
 import escobaImg from '../themes/escoba.png'
 import ExportsPanel from './ExportsPanel'
 import VideoLink from './VideoLink'
+import FolderPicker from './FolderPicker'
 import VocabEntry from './VocabEntry'
 
 const VIDEO_EXTS = ['.mp4', '.mkv', '.avi', '.mov', '.webm', '.m4v']
@@ -82,6 +83,9 @@ export default function VideoList({ onSelect, onVocab, theme, onThemeChange }) {
 
       {/* Palabras guardadas de los subtítulos y su repaso */}
       {onVocab && <VocabEntry onOpen={onVocab} />}
+
+      {/* Carpeta donde se guardan los videos (se puede cambiar) */}
+      <FolderPicker />
 
       {/* Traer un video de YouTube pegando el link */}
       <VideoLink onDone={loadVideos} onOpen={onSelect} />

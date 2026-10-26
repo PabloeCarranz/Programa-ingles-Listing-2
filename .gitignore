@@ -8,3 +8,8 @@ __pycache__/
 
 # Videos de la app cuando no hay disco D: (pesan mucho, no van al repo)
 videos/
+
+# Carpeta elegida desde la pantalla (cada compu la suya)
+config.json
+
+Instalar-Listening.exe
