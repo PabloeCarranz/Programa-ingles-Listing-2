@@ -66,7 +66,7 @@ popd
 
 echo.
 echo [6/6] Creando accesos directos en el escritorio...
-powershell -NoProfile -Command "$s=New-Object -ComObject WScript.Shell; foreach($n in 'iniciar','apagar'){ $t = if($n -eq 'iniciar'){'Listening'}else{'Listening - Apagar'}; $l=$s.CreateShortcut([Environment]::GetFolderPath('Desktop')+'\'+$t+'.lnk'); $l.TargetPath='%DEST%\'+$n+'.bat'; $l.WorkingDirectory='%DEST%'; $l.Save() }"
+powershell -NoProfile -Command "$s=New-Object -ComObject WScript.Shell; foreach($n in 'iniciar','apagar'){ $t = if($n -eq 'iniciar'){'Listening'}else{'Listening - Apagar'}; $l=$s.CreateShortcut([Environment]::GetFolderPath('Desktop')+'\'+$t+'.lnk'); $l.TargetPath='%DEST%\'+$n+'.bat'; $l.WorkingDirectory='%DEST%'; $l.IconLocation='%DEST%\assets\listening.ico'; $l.Save() }"
 
 echo.
 echo =============================================
