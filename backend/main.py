@@ -502,6 +502,13 @@ vocab_routes.register(app, dict(videos_dir=VIDEOS_DIR))
 
 app.mount('/videos', StaticFiles(directory=VIDEOS_DIR), name='videos')
 
+# ── Pantalla (frontend compilado con "npm run build") ──────────
+# Si existe frontend/dist, el mismo servidor la entrega y no hace falta Node.js ni Vite.
+# Va al final para que no tape ninguna de las rutas de arriba (/api, /videos, /ws, /remote).
+_DIST_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'frontend', 'dist')
+if os.path.isfile(os.path.join(_DIST_DIR, 'index.html')):
+    app.mount('/', StaticFiles(directory=_DIST_DIR, html=True), name='frontend')
+
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run(app, host='0.0.0.0', port=PORT)

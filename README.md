@@ -19,13 +19,11 @@ marcar fragmentos para repetirlos las veces que quieras, a la velocidad que quie
 
 ## Cómo se inicia
 
-1. Doble clic en **`iniciar.bat`** (cierra la versión anterior —solo la de esta app— y abre todo). Se abre `http://localhost:5174`.
-2. La primera vez en una compu nueva, `iniciar.bat` instala solo lo que falta (puede tardar unos minutos). Si preferís hacerlo a mano:
-   ```
-   pip install -r backend\requirements.txt
-   cd frontend && npm install
-   ```
+1. Doble clic en **`iniciar.bat`** (o en el acceso directo *Listening* del escritorio). Cierra la versión anterior (solo la de esta app), arranca todo **sin ventanas negras** y abre `http://localhost:8002` en el navegador. Para apagarlo: **`apagar.bat`**. Si algo falla, el detalle queda en `listening.log.err`.
+2. La primera vez en una compu nueva, `iniciar.bat` instala solo lo que falta (puede tardar unos minutos). Si preferís hacerlo a mano: `pip install -r backend\requirements.txt`.
    También hace falta **ffmpeg con libass** en el PATH (la versión *full* de https://www.gyan.dev/ffmpeg/builds/).
+3. **Node.js ya no hace falta** para usar el programa: la pantalla viene compilada en `frontend\dist` y la sirve el mismo backend. Solo se necesita para desarrollar: **`iniciar-dev.bat`** abre el modo desarrollo (backend + Vite en `http://localhost:5174`). Después de tocar el frontend hay que correr `cd frontend && npm run build` (el instalador lo hace solo).
+4. Para armar el instalador para otras personas: `powershell -ExecutionPolicy Bypass -File instalador\crear-instalador.ps1` (compila la pantalla y genera `Instalar-Listening.exe`).
 
 Los videos y todo lo que genera la app viven en `D:\VideosIngles`; si la compu no tiene disco `D:`, en la carpeta `videos` al lado del programa (se cambia con la variable de entorno `LISTENING_VIDEOS_DIR`):
 

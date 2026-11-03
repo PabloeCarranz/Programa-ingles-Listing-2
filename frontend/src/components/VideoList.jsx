@@ -53,7 +53,7 @@ export default function VideoList({ onSelect, onVocab, theme, onThemeChange }) {
       loadVideos()
     }
     xhr.onerror = () => setUploads(u => u.filter(x => x.name !== file.name))
-    xhr.open('POST', 'http://localhost:8002/api/upload')
+    xhr.open('POST', '/api/upload')
     xhr.send(form)
   }
 

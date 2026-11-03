@@ -13,3 +13,6 @@ videos/
 config.json
 
 Instalar-Listening.exe
+
+listening.log
+listening.log.err

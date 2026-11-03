@@ -7,8 +7,15 @@ $out   = Join-Path $root 'Instalar-Listening.exe'
 if (Test-Path $work) { Remove-Item $work -Recurse -Force }
 New-Item -ItemType Directory "$work\app", "$work\pkg" | Out-Null
 
-# El programa sin lo que se regenera o es personal
-robocopy $root "$work\app" /E /XD .git node_modules dist __pycache__ .pytest_cache videos venv instalador /XF .env config.json *.pyc Instalar-Listening.exe *.zip /NFL /NDL /NJH /NJS | Out-Null
+# La pantalla se compila ahora, asi la persona que instala no necesita Node.js
+Push-Location (Join-Path $root 'frontend')
+if (-not (Test-Path (Join-Path 'node_modules' 'vite'))) { npm install }
+npm run build
+if ($LASTEXITCODE -ne 0) { Pop-Location; throw 'No se pudo compilar el frontend' }
+Pop-Location
+
+# El programa sin lo que se regenera o es personal (frontend\dist SI va incluido; node_modules no)
+robocopy $root "$work\app" /E /XD .git node_modules __pycache__ .pytest_cache videos venv instalador /XF .env config.json *.pyc *.log *.err iniciar-dev.bat Instalar-Listening.exe *.zip /NFL /NDL /NJH /NJS | Out-Null
 Compress-Archive -Path "$work\app\*" -DestinationPath "$work\pkg\app.zip"
 Copy-Item "$PSScriptRoot\instalar.bat" "$work\pkg\instalar.bat"
 
