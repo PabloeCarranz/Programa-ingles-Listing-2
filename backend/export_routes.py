@@ -49,6 +49,16 @@ class SegmentBody(ExportOpts):
     subs: bool = True
 
 
+class SegmentsBody(ExportOpts):
+    blocks: list = Field(default_factory=list)  # [{start, end, reps: [{speed, en, es}]}]
+    subs: bool = True
+
+
+def _clean_reps(reps, en, es):
+    return [{'speed': float(r.get('speed') or 1), 'en': bool(r.get('en')), 'es': bool(r.get('es'))} for r in (reps or [])] \
+        or [{'speed': 1, 'en': en, 'es': es}]
+
+
 def register(app, ctx):
     videos_dir = ctx['videos_dir']
     exports_dir = os.path.join(videos_dir, EXPORT_DIRNAME)
@@ -144,11 +154,29 @@ def register(app, ctx):
         en, es = load_subs(body.video, 'en'), load_subs(body.video, 'es')
         opts = opts_of(body)
         opts['subs'] = body.subs
-        reps = [{'speed': float(r.get('speed') or 1), 'en': bool(r.get('en')), 'es': bool(r.get('es'))} for r in body.reps] \
-            or [{'speed': 1, 'en': body.en, 'es': body.es}]
+        reps = _clean_reps(body.reps, body.en, body.es)
         return launch('segment', body.video,
                       lambda job, cancel: subexport.export_segment(path, exports_dir, body.video, body.phrase, body.start,
                                                                    body.end, reps, en, es, opts, job, cancel))
+
+    # ── todos los fragmentos (banderas) en un solo video, cada uno con sus vueltas ──
+    @app.post('/api/export/segments')
+    def export_segments(body: SegmentsBody):
+        path = video_path(body.video)
+        en, es = load_subs(body.video, 'en'), load_subs(body.video, 'es')
+        opts = opts_of(body)
+        opts['subs'] = body.subs
+        blocks = []
+        for b in body.blocks:
+            try:
+                blocks.append({'start': float(b['start']), 'end': float(b['end']), 'reps': _clean_reps(b.get('reps'), body.en, body.es)})
+            except (KeyError, TypeError, ValueError, AttributeError):
+                raise HTTPException(400, 'Fragmento inválido.')
+        if not blocks:
+            raise HTTPException(400, 'No hay fragmentos para exportar.')
+        blocks.sort(key=lambda b: b['start'])
+        return launch('segment', body.video,
+                      lambda job, cancel: subexport.export_segments(path, exports_dir, body.video, blocks, en, es, opts, job, cancel))
 
     @app.get('/api/export/status/{job_id}')
     def export_status(job_id: str):

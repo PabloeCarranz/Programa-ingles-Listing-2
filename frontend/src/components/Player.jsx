@@ -8,6 +8,7 @@ import SubtitleCover, { loadCover, saveCover } from './SubtitleCover'
 import ExportDialog from './ExportDialog'
 import WordPopup from './WordPopup'
 import { normWord, apiError, OFFLINE } from '../lib/vocab'
+import { suggestCuts, cutName } from '../lib/suggestCuts'
 import escobaImg from '../themes/escoba.png'
 import botonComic2Img from '../themes/botonComic2.png'
 import gothicImg from '../themes/gothic.png'
@@ -163,7 +164,7 @@ const FLAG_COLORS = [
 // ── Barra de progreso con banderas ───────────────────────
 const FLAG_DRAG_THRESHOLD = 6 // px mínimos para considerar arrastre
 
-const SeekBar = forwardRef(function SeekBar({ duration, currentTime, segments, markStart, seekMode = 'seek', activeIdx = null, onSeek, onEndFlag, onMoveFlag, onMoveBlock, onPlayBlock, onZoomChange }, ref) {
+const SeekBar = forwardRef(function SeekBar({ duration, currentTime, segments, suggestions = [], markStart, seekMode = 'seek', activeIdx = null, onSeek, onEndFlag, onMoveFlag, onMoveBlock, onPlayBlock, onZoomChange }, ref) {
   const wrapRef     = useRef(null)
   const dragging    = useRef(false)
   const flagPending = useRef(null)
@@ -368,6 +369,13 @@ const SeekBar = forwardRef(function SeekBar({ duration, currentTime, segments, m
         )
       })}
 
+      {/* Sugerencias de corte (todavía sin confirmar): franjas punteadas */}
+      {suggestions.map(sg => (
+        <div key={sg.id} className="sb-suggest"
+          style={{ left: `${pct(sg.start)}%`, width: `${Math.max(0.4, pct(sg.end) - pct(sg.start))}%` }}
+          title={`💡 Sugerencia: ${sg.text}`} />
+      ))}
+
       {/* Bandera temporal de inicio pendiente */}
       {markStart != null && duration > 0 && (
         <div className="sb-mark-pending"
@@ -485,6 +493,10 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
   useEffect(() => { try { localStorage.setItem('sub_size', String(subSize)) } catch { /* sin almacenamiento */ } }, [subSize])
 
   const [markStart,    setMarkStart]    = useState(null)
+  const [suggestions,  setSuggestions]  = useState(null)   // sugerencias de corte sin confirmar (null = no se pidieron)
+  const [confirmClear, setConfirmClear] = useState(false)  // "¿Seguro?" antes de quitar todas las banderas
+  const [clearedSegs,  setClearedSegs]  = useState(null)   // banderas recién quitadas, para poder recuperarlas
+  const previewEnd = useRef(null)                           // fin de la sugerencia que se está escuchando
   const [marking,      setMarking]      = useState(false)
   const [newPhrase,    setNewPhrase]    = useState('')
 
@@ -941,6 +953,58 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
     setSegments(updated); persistSegs(updated)
     if (active === idx) stopLoop()
   }
+  // ── Sugerencias de corte ──
+  function makeSeg(start, end, phrase, i = 0) {
+    return { id: Date.now() + i, start, end, phrase, repeat: template.length,
+             repConfig: template.map(rc => ({ ...rc })), subStyle }
+  }
+  function runSuggest() {
+    const list = suggestCuts(subsEn, { shift: subShift, duration: videoDuration, existing: segments })
+    setSuggestions(list)
+    setRightTab('fragments')
+  }
+  function addSegs(newSegs) {
+    if (!newSegs.length) return
+    const updated = [...segments, ...newSegs].sort((a, b) => a.start - b.start)
+    setSegments(updated); setCollapsed(new Set(updated.map((_, i) => i)))
+    persistSegs(updated); setClearedSegs(null); flashSaved()
+  }
+  function acceptSuggestion(sg) {
+    addSegs([makeSeg(sg.start, sg.end, cutName(sg.text))])
+    setSuggestions(prev => prev.filter(x => x.id !== sg.id))
+  }
+  function acceptAllSuggestions() {
+    addSegs(suggestions.map((sg, i) => makeSeg(sg.start, sg.end, cutName(sg.text), i)))
+    setSuggestions(null)
+  }
+  function rejectSuggestion(sg) {
+    setSuggestions(prev => prev.filter(x => x.id !== sg.id))
+  }
+  function listenSuggestion(sg) {
+    const v = videoRef.current; if (!v) return
+    stopLoop()
+    previewEnd.current = sg.end
+    v.currentTime = sg.start; v.play()
+  }
+  useEffect(() => {
+    const v = videoRef.current; if (!v) return
+    const onT = () => { if (previewEnd.current != null && v.currentTime >= previewEnd.current) { previewEnd.current = null; v.pause() } }
+    const onSeek = () => { if (previewEnd.current != null && v.currentTime > previewEnd.current + 0.5) previewEnd.current = null }
+    v.addEventListener('timeupdate', onT); v.addEventListener('seeked', onSeek)
+    return () => { v.removeEventListener('timeupdate', onT); v.removeEventListener('seeked', onSeek) }
+  }, [video.name])
+  // ── Quitar todas las banderas (con opción de recuperarlas) ──
+  function clearAllSegments() {
+    stopLoop()
+    setClearedSegs(segments)
+    setSegments([]); persistSegs([]); setConfirmClear(false)
+  }
+  function restoreSegments() {
+    if (!clearedSegs) return
+    const updated = [...clearedSegs, ...segments].sort((a, b) => a.start - b.start)
+    setSegments(updated); setCollapsed(new Set(updated.map((_, i) => i)))
+    persistSegs(updated); setClearedSegs(null); flashSaved()
+  }
   function saveSegEdit(idx) {
     const updated = segments.map((s, i) => i === idx ? { ...s, phrase: editVal } : s)
     setSegments(updated); persistSegs(updated); setEditingIdx(null)
@@ -1285,6 +1349,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
             duration={videoDuration}
             currentTime={videoTime}
             segments={segments}
+            suggestions={suggestions ?? []}
             markStart={markStart}
             seekMode={seekMode}
             activeIdx={active}
@@ -1401,6 +1466,30 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
                 onKeyDown={e => e.key === 'Enter' && markOut()} autoFocus />
             </div>
           )}
+          <div className="mark-row mark-row-tools">
+            <button className="mark-btn mark-btn-suggest" onClick={runSuggest} disabled={subsEn.length === 0}
+              title={subsEn.length === 0
+                ? 'Primero hacen falta los subtítulos en inglés (✨ Auto o 📄 SRT)'
+                : 'Lee toda la conversación y propone fragmentos buenos para practicar. Vos confirmás cuáles quedan.'}>
+              💡 Sugerir cortes
+            </button>
+            {confirmClear ? (
+              <span className="mark-confirm">
+                ¿Quitar las {segments.length} banderas?
+                <button className="mark-mini mark-mini-yes" onClick={clearAllSegments}>Sí</button>
+                <button className="mark-mini" onClick={() => setConfirmClear(false)}>No</button>
+              </span>
+            ) : clearedSegs && segments.length === 0 ? (
+              <button className="mark-btn" onClick={restoreSegments} title="Volver a poner las banderas que acabás de quitar">
+                ↶ Recuperar {clearedSegs.length} banderas
+              </button>
+            ) : (
+              <button className="mark-btn mark-btn-clear" onClick={() => setConfirmClear(true)} disabled={segments.length === 0}
+                title="Quitar todas las banderas (fragmentos) de este video">
+                🧹 Quitar todas las banderas
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Transcripción */}
@@ -1471,7 +1560,44 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
 
         {rightTab === 'fragments' && (
           <div className="seg-list">
-            {segments.length === 0 && (
+            {suggestions && (
+              <div className="sug-box">
+                <div className="sug-head">
+                  <span className="sug-title">💡 Sugerencias de corte ({suggestions.length})</span>
+                  <button className="sug-x" onClick={() => setSuggestions(null)} title="Cerrar sugerencias">✕</button>
+                </div>
+                {suggestions.length === 0 ? (
+                  <div className="sug-empty">No hay más partes para sugerir (puede que ya estén marcadas o que los subtítulos sean muy cortos).</div>
+                ) : <>
+                  <div className="sug-hint">Escuchá cada una con ▶ y confirmá ✓ las que te sirvan para practicar.</div>
+                  <div className="sug-all">
+                    <button className="sug-btn sug-btn-ok" onClick={acceptAllSuggestions}>✓ Aceptar todas</button>
+                    <button className="sug-btn" onClick={() => setSuggestions(null)}>✕ Descartar todas</button>
+                  </div>
+                  {suggestions.map(sg => (
+                    <div key={sg.id} className="sug-item">
+                      <div className="sug-meta">
+                        <span className="sug-time">{fmt(sg.start)} → {fmt(sg.end)}</span>
+                        <span className="sug-stars" title={`Qué tan buena es para practicar (${sg.score}/100)`}>{'★'.repeat(sg.stars)}{'☆'.repeat(3 - sg.stars)}</span>
+                      </div>
+                      <div className="sug-text">{sg.text}</div>
+                      <div className="sug-actions">
+                        <button className="sug-btn" onClick={() => listenSuggestion(sg)} title="Escuchar esta parte">▶ Escuchar</button>
+                        <button className="sug-btn sug-btn-ok" onClick={() => acceptSuggestion(sg)} title="Poner la bandera">✓</button>
+                        <button className="sug-btn sug-btn-no" onClick={() => rejectSuggestion(sg)} title="Descartar">✕</button>
+                      </div>
+                    </div>
+                  ))}
+                </>}
+              </div>
+            )}
+            {segments.length > 0 && (
+              <button className="fc-export-all" onClick={() => openExport('all')}
+                title="Un solo video con todos los fragmentos, cada uno repetido con sus vueltas, velocidades y subtítulos">
+                ⬇️ Exportar los {segments.length} fragmentos con sus vueltas
+              </button>
+            )}
+            {segments.length === 0 && !suggestions && (
               <div className="seg-empty">
                 Pausá en la frase que querés y usá<br />
                 <strong>[ Marcar inicio</strong> y <strong>] Marcar fin</strong>.<br /><br />
@@ -1679,6 +1805,7 @@ export default function Player({ video, onBack, theme, onThemeChange }) {
         <ExportDialog
           mode={exportReq.mode} video={video}
           segment={exportReq.mode === 'segment' ? segments[exportReq.idx] : null}
+          segments={segments}
           subsEn={subsEn} subsEs={subsEs} showEn={showEn} showEs={showEs}
           subStyle={subStyle} subSize={subSize} subOffset={subOffset} subShift={subShift}
           subBg={subBg} cover={cover}

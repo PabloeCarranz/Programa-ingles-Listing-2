@@ -20,15 +20,18 @@ function loadPrefs() {
 
 // Diálogo para guardar el video (o un fragmento) con los subtítulos puestos.
 // mode: 'video' = el video entero · 'segment' = un fragmento con sus vueltas y velocidades
-export default function ExportDialog({ mode, video, segment, subsEn, subsEs, showEn = true, showEs = true, subStyle, subSize, subOffset, subShift, subBg = true, cover = null, refHeight, view = null, currentTime, onClose }) {
+//       'all' = todos los fragmentos (banderas) uno detrás de otro, cada uno con sus vueltas
+export default function ExportDialog({ mode, video, segment, segments = [], subsEn, subsEs, showEn = true, showEs = true, subStyle, subSize, subOffset, subShift, subBg = true, cover = null, refHeight, view = null, currentTime, onClose }) {
   const prefs = useMemo(loadPrefs, [])
-  const isSeg = mode === 'segment'
+  const isAll = mode === 'all'
+  const isSeg = mode === 'segment' || isAll
+  const blocks = useMemo(() => (isAll ? [...segments].sort((a, b) => a.start - b.start) : segment ? [segment] : []), [isAll, segments, segment])
   // Idiomas marcados al abrir: los que el usuario tiene activados (🇬🇧 / 🇪🇸) en el reproductor. Si no tiene ninguno activo, los que existan.
   const initLang = useMemo(() => {
     const en = showEn && subsEn.length > 0, es = showEs && subsEs.length > 0
     return en || es ? { en, es } : { en: subsEn.length > 0, es: subsEs.length > 0 }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  const [style, setStyle] = useState(segment?.subStyle || subStyle || 'default')
+  const [style, setStyle] = useState(blocks[0]?.subStyle || subStyle || 'default')
   const [en, setEn] = useState(initLang.en)
   const [es, setEs] = useState(initLang.es)
   const [format, setFormat] = useState(prefs.format === 'soft' ? 'soft' : 'hard')
@@ -47,10 +50,8 @@ export default function ExportDialog({ mode, video, segment, subsEn, subsEs, sho
   const pollRef = useRef(null)
   const running = !!jobId && !result && !error
 
-  const reps = useMemo(() => {
-    const rc = segment?.repConfig ?? [{ speed: 1, en: true, es: false }]
-    return rc.map(r => ({ speed: r.speed ?? 1, en: !!r.en, es: !!r.es }))
-  }, [segment])
+  const repsOf = seg => (seg?.repConfig ?? [{ speed: 1, en: true, es: false }]).map(r => ({ speed: r.speed ?? 1, en: !!r.en, es: !!r.es }))
+  const reps = useMemo(() => blocks.flatMap(repsOf), [blocks])
   const hard = format === 'hard'
   const soft = !isSeg && format === 'soft'
   // Idiomas que realmente se van a grabar (en un fragmento con vueltas los decide cada vuelta)
@@ -62,13 +63,13 @@ export default function ExportDialog({ mode, video, segment, subsEn, subsEs, sho
 
   // Momento del video que se muestra en la vista previa: uno con subtítulo
   const previewT = useMemo(() => {
-    const lo = isSeg ? segment.start : 0, hi = isSeg ? segment.end : Infinity
+    const lo = isSeg ? blocks[0].start : 0, hi = isSeg ? blocks[0].end : Infinity
     const all = [...subsEn, ...subsEs].map(s => ({ a: s.start + subShift, b: s.end + subShift }))
     const cur = currentTime || 0
     if (all.some(s => cur >= s.a && cur <= s.b && cur >= lo && cur <= hi)) return cur
     const first = all.filter(s => s.b > lo && s.a < hi).sort((x, y) => x.a - y.a)[0]
     return first ? Math.max(lo, first.a) + Math.min(0.6, (first.b - first.a) / 2) : lo + 0.5
-  }, [isSeg, segment, subsEn, subsEs, subShift, currentTime])
+  }, [isSeg, blocks, subsEn, subsEs, subShift, currentTime])
 
   const baseBody = () => ({
     video: video.name, style,
@@ -108,12 +109,16 @@ export default function ExportDialog({ mode, video, segment, subsEn, subsEs, sho
   async function start() {
     setError(''); setResult(null); setStatus(null)
     try { localStorage.setItem('export_prefs', JSON.stringify({ format, quality })) } catch { /* sin almacenamiento */ }
-    const body = isSeg
+    const plain = [{ speed: 1, en: enOn, es: esOn }]
+    const body = isAll
+      ? { ...baseBody(), subs: withSubs,
+          blocks: blocks.map(b => ({ start: b.start, end: b.end, reps: useReps ? repsOf(b) : plain })) }
+      : isSeg
       ? { ...baseBody(), start: segment.start, end: segment.end, phrase: segment.phrase, subs: withSubs,
           reps: useReps ? reps : [{ speed: 1, en: enOn, es: esOn }] }
       : baseBody()
     try {
-      const res = await fetch(isSeg ? '/api/export/segment' : '/api/export/start', {
+      const res = await fetch(isAll ? '/api/export/segments' : isSeg ? '/api/export/segment' : '/api/export/start', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       })
       if (!res.ok) { setError(await errorText(res)); return }
@@ -151,7 +156,8 @@ export default function ExportDialog({ mode, video, segment, subsEn, subsEs, sho
   }
   const reveal = () => fetch(`/api/exports/reveal?name=${encodeURIComponent(result.file)}`, { method: 'POST' }).catch(() => {})
 
-  const title = isSeg ? `Exportar fragmento · ${segment.phrase}` : 'Exportar video con subtítulos'
+  const title = isAll ? `Exportar los ${blocks.length} fragmentos en un solo video`
+    : isSeg ? `Exportar fragmento · ${segment.phrase}` : 'Exportar video con subtítulos'
   const canStart = !running && !result && !nothing
 
   return (
@@ -195,8 +201,17 @@ export default function ExportDialog({ mode, video, segment, subsEn, subsEs, sho
                   <span className="exp-lbl">Vueltas</span>
                   <div className="exp-opts exp-opts-col">
                     <label className="exp-check"><input type="checkbox" checked={useReps} onChange={e => setUseReps(e.target.checked)} />
-                      Usar las {reps.length} vueltas configuradas (velocidad e idioma de cada una)</label>
-                    {useReps && (
+                      {isAll ? 'Repetir cada fragmento con sus vueltas (velocidad e idioma de cada una)'
+                        : `Usar las ${reps.length} vueltas configuradas (velocidad e idioma de cada una)`}</label>
+                    {useReps && isAll && (
+                      <div className="exp-reps">
+                        {blocks.map((b, i) => (
+                          <span key={b.id ?? i} className="exp-rep" title={b.phrase}>#{i + 1} · {repsOf(b).length} {repsOf(b).length === 1 ? 'vuelta' : 'vueltas'}</span>
+                        ))}
+                      </div>
+                    )}
+                    {!useReps && isAll && <small className="exp-hint">Cada fragmento se pasa una sola vez, a velocidad normal.</small>}
+                    {useReps && !isAll && (
                       <div className="exp-reps">
                         {reps.map((r, i) => (
                           <span key={i} className="exp-rep">V{i + 1} · {r.speed}x {r.en ? '🇺🇸' : ''}{r.es ? '🇪🇸' : ''}{!r.en && !r.es ? 'sin subs' : ''}</span>

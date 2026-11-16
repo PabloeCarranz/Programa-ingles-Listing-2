@@ -238,6 +238,15 @@ class FfmpegTests(unittest.TestCase):
         self.assertAlmostEqual(self.dur(p), 1.2 + 2.4, delta=0.35)
         self.assertTrue(sx.probe(p)['has_audio'])
 
+    def test_varios_fragmentos_en_un_solo_video(self):
+        blocks = [
+            {'start': 0.2, 'end': 1.0, 'reps': [{'speed': 1, 'en': True, 'es': False}, {'speed': 0.5, 'en': True, 'es': True}]},
+            {'start': 1.2, 'end': 1.8, 'reps': [{'speed': 1, 'en': False, 'es': False}]},
+        ]
+        p = sx.export_segments(self.video, self.out, 'prueba.mp4', blocks, self.en, self.es, dict(style='comic', ref_h=360))
+        # 0.8 + 1.6 (a 0.5x) + 0.6
+        self.assertAlmostEqual(self.dur(p), 0.8 + 1.6 + 0.6, delta=0.4)
+
     def test_pistas_seleccionables(self):
         p = sx.export_soft(self.video, self.out, 'prueba.mp4', self.en, self.es, dict(en=True, es=True))
         r = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 's', '-show_entries', 'stream=codec_name:stream_tags=language',

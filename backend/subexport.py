@@ -764,48 +764,73 @@ def build_segment_graph(reps, fps, has_audio, out_w, out_h, src_w, src_h, cover=
 
 def export_segment(video_path, out_dir, video_name, phrase, start, end, reps, subs_en, subs_es, opts, job=None, cancel=None):
     """Un fragmento con sus vueltas: cada una con su velocidad y sus idiomas de subtítulos."""
+    reps = reps or [{'speed': 1, 'en': True, 'es': False}]
+    stem = os.path.splitext(os.path.basename(video_name))[0]
+    return _export_blocks(video_path, out_dir, [{'start': start, 'end': end, 'reps': reps}], subs_en, subs_es, opts,
+                          job, cancel, label=f'{stem} · {phrase or "fragmento"} (x{len(reps)})')
+
+
+def export_segments(video_path, out_dir, video_name, blocks, subs_en, subs_es, opts, job=None, cancel=None):
+    """Varios fragmentos (las banderas) uno detrás de otro en un solo video, cada uno con sus vueltas.
+    blocks: [{'start', 'end', 'reps': [{speed, en, es}]}]"""
+    if not blocks:
+        raise ExportError('No hay fragmentos para exportar.')
+    stem = os.path.splitext(os.path.basename(video_name))[0]
+    return _export_blocks(video_path, out_dir, blocks, subs_en, subs_es, opts, job, cancel,
+                          label=f'{stem} · {len(blocks)} fragmentos con vueltas')
+
+
+def _export_blocks(video_path, out_dir, blocks, subs_en, subs_es, opts, job, cancel, label):
     ensure_ffmpeg_ready()
     info = probe(video_path)
     quality = opts.get('quality', 'media')
     out_w, out_h = output_size(info['width'], info['height'], quality)
     style = opts.get('style') or 'default'
     shift = float(opts.get('shift') or 0)
-    start, end = max(0.0, float(start)), float(end)
-    if info['duration']:
-        end = min(end, info['duration'])
-    if end - start < 0.2:
-        raise ExportError('El fragmento es demasiado corto.')
-    dur = end - start
     burn = bool(opts.get('subs', True))
     geo = _opts_geometry(info, out_w, out_h, opts)
+    clips = []                     # (inicio, fin, vueltas) de cada fragmento válido
+    for b in blocks:
+        start, end = max(0.0, float(b['start'])), float(b['end'])
+        if info['duration']:
+            end = min(end, info['duration'])
+        if end - start < 0.2:
+            if len(blocks) == 1:
+                raise ExportError('El fragmento es demasiado corto.')
+            continue
+        clips.append((start, end, b.get('reps') or [{'speed': 1, 'en': True, 'es': False}]))
+    if not clips:
+        raise ExportError('Los fragmentos son demasiado cortos.')
     work = tempfile.mkdtemp(prefix='seg_')
     try:
         prepare_fonts(work, style)
-        graph_reps, ass_cache = [], {}
-        for i, rp in enumerate(reps or [{'speed': 1, 'en': True, 'es': False}]):
-            en, es = bool(rp.get('en')) and burn, bool(rp.get('es')) and burn
-            key = (en, es)
-            ass_name = None
-            if en or es:
-                if key not in ass_cache:
-                    entries = timeline(subs_en if en else [], subs_es if es else [], shift, start, end)
-                    entries = [(a - start, b - start, e, s) for a, b, e, s in entries]
-                    if entries:
-                        name = f'r{len(ass_cache)}.ass'
-                        write_ass(os.path.join(work, name), build_ass(entries, out_w, out_h, style, geo, en, es, _opt_bg(opts)))
-                        ass_cache[key] = name
-                    else:
-                        ass_cache[key] = None
-                ass_name = ass_cache[key]
-            graph_reps.append({'speed': rp.get('speed') or 1, 'ass': ass_name})
-        total = sum(dur / max(0.5, min(2.0, float(r['speed']))) for r in graph_reps)
+        graph_reps, inputs, ass_cache = [], [], {}
+        for start, end, reps in clips:
+            for rp in reps:
+                en, es = bool(rp.get('en')) and burn, bool(rp.get('es')) and burn
+                key = (start, end, en, es)
+                ass_name = None
+                if en or es:
+                    if key not in ass_cache:
+                        entries = timeline(subs_en if en else [], subs_es if es else [], shift, start, end)
+                        entries = [(a - start, b - start, e, s) for a, b, e, s in entries]
+                        if entries:
+                            name = f'r{len(ass_cache)}.ass'
+                            write_ass(os.path.join(work, name), build_ass(entries, out_w, out_h, style, geo, en, es, _opt_bg(opts)))
+                            ass_cache[key] = name
+                        else:
+                            ass_cache[key] = None
+                    ass_name = ass_cache[key]
+                graph_reps.append({'speed': rp.get('speed') or 1, 'ass': ass_name})
+                inputs.append((start, end - start))
+        total = sum(d / max(0.5, min(2.0, float(r['speed']))) for r, (_, d) in zip(graph_reps, inputs))
         graph = build_segment_graph(graph_reps, info['fps'], info['has_audio'], out_w, out_h, info['width'], info['height'],
                                     opts.get('cover'))
         tmp_out = os.path.join(work, 'out.mp4')
 
         def attempt(encoder):
             cmd = ['ffmpeg', '-y']
-            for _ in graph_reps:
+            for start, dur in inputs:
                 cmd += ['-ss', f'{start:.3f}', '-t', f'{dur:.3f}', '-i', video_path]
             cmd += ['-filter_complex', graph, '-map', '[v]'] + (['-map', '[a]'] if info['has_audio'] else [])
             cmd += [*video_codec_args(quality, encoder)] + (['-c:a', 'aac', '-b:a', '192k'] if info['has_audio'] else [])
@@ -818,10 +843,8 @@ def export_segment(video_path, out_dir, video_name, phrase, start, end, reps, su
             rc, err = attempt('libx264')
         if rc != 0:
             raise ExportError('ffmpeg falló: ' + err.strip()[-300:])
-        stem = os.path.splitext(os.path.basename(video_name))[0]
         os.makedirs(out_dir, exist_ok=True)
-        label = safe_filename(f'{stem} · {phrase or "fragmento"} (x{len(graph_reps)})')
-        dest = unique_path(out_dir, label, '.mp4')
+        dest = unique_path(out_dir, safe_filename(label), '.mp4')
         shutil.move(tmp_out, dest)
         return dest
     finally:

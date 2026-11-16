@@ -21,6 +21,8 @@ popd
 if not exist "%~dp0frontend\dist\index.html" (echo [!] No se pudo armar la pantalla. Mira el error de arriba.& pause & exit /b 1)
 :front_ok
 
+rem ffmpeg propio del programa (lo baja el instalador cuando la compu no tiene winget)
+if exist "%~dp0ffmpeg\bin\ffmpeg.exe" set "PATH=%~dp0ffmpeg\bin;%PATH%"
 where ffmpeg >nul 2>&1 || echo [aviso] No encuentro ffmpeg en el PATH: para exportar videos con subtitulos hace falta (version "full" de gyan.dev).
 
 rem La primera vez en una compu nueva instala lo que falte (despues ya no tarda nada)
